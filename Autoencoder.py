@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:41:18
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-12 14:47:07
+LastEditTime: 2023-04-12 14:58:18
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -111,7 +111,8 @@ class TestDecoder(nn.Module):
         size[-2:] *= 2
         B = torch.zeros(list(size))
         B[..., ::2, ::2] = A
-        return B.to("mps")
+        # return B.to("mps")
+        return B.to("cpu")
         
     def forward(self, x):
         x = F.relu(self.fc1(x))
