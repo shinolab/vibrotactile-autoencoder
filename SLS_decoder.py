@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-12 14:58:21
+LastEditTime: 2023-04-12 17:40:48
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -13,7 +13,6 @@ import pickle
 import numpy as np
 import sys
 from torch import nn
-from typing import Optional, Tuple
 from sklearn.preprocessing import MinMaxScaler
 
 # device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
