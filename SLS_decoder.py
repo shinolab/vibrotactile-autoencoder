@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-13 14:02:13
+LastEditTime: 2023-04-13 14:10:24
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -32,7 +32,6 @@ def ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_sp
         t = float(i) / 999.0
 
         generated_vector = optimizer.calc_point_from_slider_position(t)
-        print(generated_vector)
 
         # denormalization
         generated_vector = torch.unsqueeze(torch.tensor(generated_vector), 0)
@@ -86,7 +85,6 @@ def main():
     for i in range(30):
         # slider_ends = optimizer.get_slider_ends()
         slider_position = ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_spec)
-        print(slider_position)
         optimizer.submit_feedback_data(slider_position)
 
         optimized_vector = optimizer.get_maximizer()
@@ -98,7 +96,7 @@ def main():
 
         mse = nn.MSELoss()
         loss = mse(decoded_spec, target_spec).item()
-        print("[#iters = " + str(i + 1) + "] loss: " + str(loss))
+        print("[#iters = " + str(i + 1) + "], slider_position: " + str(slider_position) + ", loss: " + str(loss))
 
 
 if __name__ == '__main__':
