@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-12 17:40:48
+LastEditTime: 2023-04-13 14:02:13
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -32,6 +32,7 @@ def ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_sp
         t = float(i) / 999.0
 
         generated_vector = optimizer.calc_point_from_slider_position(t)
+        print(generated_vector)
 
         # denormalization
         generated_vector = torch.unsqueeze(torch.tensor(generated_vector), 0)

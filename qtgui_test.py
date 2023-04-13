@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
 
         # 将水平滑块和垂直滑块以及热度图区域添加到布局中
         grid = QGridLayout()
-        grid.addWidget(self.heatmap_label, 0, 0, 1, 10)
+        grid.addWidget(self.heatmap_label, 0, 6, 1, 10)
         for i in range(len(self.vertical_sliders)):
             grid.addWidget(self.vertical_sliders[i], 1, i)
         grid.addWidget(self.horizontal_slider, 2, 0, 1, 20)
