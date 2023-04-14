@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-14 12:54:50
+LastEditTime: 2023-04-15 02:48:44
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -81,8 +81,10 @@ def main():
     optimizer.set_hyperparams(kernel_signal_var=0.50,
                               kernel_length_scale=0.10,
                               kernel_hyperparams_prior_var=0.10)
+    
+    optimizer.set_gaussian_process_upper_confidence_bound_hyperparam(5.)
 
-    for i in range(30):
+    for i in range(10):
         # slider_ends = optimizer.get_slider_ends()
         slider_position = ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_spec)
         optimizer.submit_feedback_data(slider_position)
