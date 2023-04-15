@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-15 21:29:32
+LastEditTime: 2023-04-15 21:57:45
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -19,6 +19,8 @@ from sklearn.preprocessing import MinMaxScaler
 # device = torch.device("mps")
 device = torch.device("cpu")
 print(f'Selected device: {device}')
+
+FEAT_DIM = 16
 
 # A dummy implementation of slider manipulation
 def ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_spec):
@@ -51,17 +53,17 @@ def ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_sp
 def main():
     # Model initialization and parameter loading
     # TestDecoder is used for test without indices of pooling
-    decoder = Autoencoder.TestDecoder(encoded_space_dim = 20)
+    decoder = Autoencoder.TestDecoder(encoded_space_dim = FEAT_DIM)
     # decoder_dict = torch.load('/content/drive/MyDrive/Colab Notebooks/vibrotactile-encoder/decoder.pt', map_location=torch.device('cpu'))
-    decoder_dict = torch.load('model/decoder_20d.pt', map_location=torch.device('cpu'))
+    decoder_dict = torch.load('model/decoder_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
     decoder_dict = {k: v for k, v in decoder_dict.items()}
     decoder.load_state_dict(decoder_dict)
 
     decoder.eval()
     decoder.to(device)
 
-    # Load the extracted 20-dimensional features
-    with open('feat_dict.pickle', 'rb') as file:
+    # Load the extracted n-dimensional features
+    with open('feat_dict_' + str(FEAT_DIM) + 'd.pickle', 'rb') as file:
         feat_dict = pickle.load(file)
 
     vib_feat = feat_dict['vib_feat']
@@ -76,7 +78,7 @@ def main():
     norm_vib_feat = norm_scaler.fit_transform(vib_feat) # normalization
 
     optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(
-        num_dims=20)
+        num_dims=FEAT_DIM)
 
     optimizer.set_hyperparams(kernel_signal_var=0.50,
                               kernel_length_scale=0.10,
@@ -84,7 +86,7 @@ def main():
     
     optimizer.set_gaussian_process_upper_confidence_bound_hyperparam(5.)
 
-    for i in range(10):
+    for i in range(20):
         # slider_ends = optimizer.get_slider_ends()
         slider_position = ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_spec)
         optimizer.submit_feedback_data(slider_position)
