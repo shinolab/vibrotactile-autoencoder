@@ -2,12 +2,12 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-15 03:25:07
+LastEditTime: 2023-04-15 21:29:32
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 import pySequentialLineSearch
-from model import Autoencoder_20D
+from model import Autoencoder
 import torch
 import pickle
 import numpy as np
@@ -51,7 +51,7 @@ def ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_sp
 def main():
     # Model initialization and parameter loading
     # TestDecoder is used for test without indices of pooling
-    decoder = Autoencoder_20D.TestDecoder(encoded_space_dim = 20)
+    decoder = Autoencoder.TestDecoder(encoded_space_dim = 20)
     # decoder_dict = torch.load('/content/drive/MyDrive/Colab Notebooks/vibrotactile-encoder/decoder.pt', map_location=torch.device('cpu'))
     decoder_dict = torch.load('model/decoder_20d.pt', map_location=torch.device('cpu'))
     decoder_dict = {k: v for k, v in decoder_dict.items()}
