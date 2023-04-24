@@ -2,13 +2,14 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-18 18:36:13
+LastEditTime: 2023-04-24 17:24:44
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 import pySequentialLineSearch
 from model import Autoencoder
 from model import VAE
+from model import AAE
 import torch
 import pickle
 import numpy as np
@@ -54,10 +55,10 @@ def ask_human_for_slider_manipulation(optimizer, decoder, norm_scaler, target_sp
 def main():
     # Model initialization and parameter loading
     # TestDecoder is used for test without indices of pooling
-    # decoder = Autoencoder.TestDecoder(encoded_space_dim = FEAT_DIM)
+    # decoder = Autoencoder.Decoder(encoded_space_dim = FEAT_DIM)
     decoder = VAE.Decoder(encoded_space_dim = FEAT_DIM)
     # decoder_dict = torch.load('/content/drive/MyDrive/Colab Notebooks/vibrotactile-encoder/decoder.pt', map_location=torch.device('cpu'))
-    decoder_dict = torch.load('model/decoder_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
+    decoder_dict = torch.load('model/VAE/decoder_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
     decoder_dict = {k: v for k, v in decoder_dict.items()}
     decoder.load_state_dict(decoder_dict)
 
@@ -65,7 +66,7 @@ def main():
     decoder.to(device)
 
     # Load the extracted n-dimensional features
-    with open('feat_dict_' + str(FEAT_DIM) + 'd.pickle', 'rb') as file:
+    with open('feat_dict/VAE/feat_dict_' + str(FEAT_DIM) + 'd.pickle', 'rb') as file:
         feat_dict = pickle.load(file)
 
     vib_feat = feat_dict['vib_feat']

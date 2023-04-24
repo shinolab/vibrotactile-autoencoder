@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:41:18
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-24 16:55:28
+LastEditTime: 2023-04-24 13:41:07
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -59,7 +59,7 @@ class Decoder(nn.Module):
         x = F.relu(self.bn2(self.deconv2(x)))
         x = self.deconv3(x)
         return x
-
+    
 
 class Classifier(nn.Module):
     def __init__(self, encoded_space_dim):
@@ -71,17 +71,17 @@ class Classifier(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.softmax(self.fc2(x), dim=1) #dim0=batch, dim1=element
         return x
-    
 
-class AutoEncoder(nn.Module):
+
+class Discriminator(nn.Module):
     def __init__(self, encoded_space_dim):
         super().__init__()
-        self.encoder = Encoder(encoded_space_dim)
-        self.decoder = Decoder(encoded_space_dim)
-        self.classifier = Classifier(encoded_space_dim)
+        self.fc1 = nn.Linear(encoded_space_dim, 16)
+        self.fc2 = nn.Linear(16, 1)
         
     def forward(self, x):
-        feat = self.encoder(x)
-        pred_img = self.decoder(feat)
-        pred_label = self.classifier(feat)
-        return feat, pred_img, pred_label
+        x = F.relu(self.fc1(x))
+        x = F.sigmoid(self.fc2(x))
+        return x
+
+    
