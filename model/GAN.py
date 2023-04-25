@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:41:18
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-25 13:37:48
+LastEditTime: 2023-04-25 17:53:55
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -48,13 +48,15 @@ class Discriminator(nn.Module):
         self.flatten = nn.Flatten(start_dim=1)
 
         self.fc1 = nn.Linear(32 * 1 * 23, 1)
+
+        self.dropout = nn.Dropout(p=0.2)
         
     def forward(self, x):
-        x = F.relu(self.conv1(x))
+        x = self.dropout(F.leaky_relu(self.conv1(x), 0.2))
         x = self.pool(self.conv2(x))
-        x = F.relu(self.bn1(x))
+        x = self.dropout(F.leaky_relu(self.bn1(x), 0.2))
         x = self.pool(self.conv3(x))
-        x = F.relu(self.bn2(x))
+        x = self.dropout(F.leaky_relu(self.bn2(x), 0.2))
         x = self.flatten(x)
         x = F.sigmoid(self.fc1(x))
         return x

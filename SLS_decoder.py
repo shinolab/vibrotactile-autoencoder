@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-25 14:09:22
+LastEditTime: 2023-04-25 17:53:14
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -15,6 +15,7 @@ import torch
 import pickle
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 from torch import nn
 from sklearn.preprocessing import MinMaxScaler
 
@@ -85,6 +86,8 @@ def main():
     decoder.eval()
     decoder.to(device)
 
+    TEST_INDEX = 2023
+
     # Load the extracted n-dimensional features
     if model_name != 'GAN':
         with open('feat_dict/' + model_name + '/feat_dict_' + str(FEAT_DIM) + 'd.pickle', 'rb') as file:
@@ -94,7 +97,8 @@ def main():
         original_vib = feat_dict['original_vib']
 
         # Randomly choose a target spectrogram
-        target_index = np.random.randint(0, len(original_vib))
+        # target_index = np.random.randint(0, len(original_vib))
+        target_index = TEST_INDEX
         target_spec = original_vib[target_index]
         target_spec = torch.unsqueeze(torch.tensor(target_spec), 0).to(device)
 
@@ -107,7 +111,8 @@ def main():
         
         original_vib = feat_dict['original_vib']
         # Randomly choose a target spectrogram
-        target_index = np.random.randint(0, len(original_vib))
+        # target_index = np.random.randint(0, len(original_vib))
+        target_index = TEST_INDEX
         target_spec = original_vib[target_index]
         target_spec = torch.unsqueeze(torch.tensor(target_spec), 0).to(device)
 
@@ -144,6 +149,9 @@ def main():
         mse = nn.MSELoss()
         loss = mse(decoded_spec, target_spec).item()
         print("[#iters = " + str(i + 1) + "], slider_position: " + str(slider_position) + ", loss: " + str(loss))
+    
+    plt.imshow(decoded_spec.squeeze().detach().numpy())
+    plt.show()
 
 
 if __name__ == '__main__':
