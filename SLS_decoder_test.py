@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-27 01:30:06
+LastEditTime: 2023-04-27 00:42:39
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -24,7 +24,7 @@ from sklearn.preprocessing import MinMaxScaler
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 16
+FEAT_DIM = 20
 
 # A dummy implementation of slider manipulation
 def ask_human_for_slider_manipulation(optimizer, decoder, target_spec, norm_scaler=False):
@@ -86,12 +86,6 @@ def main():
     decoder.eval()
     decoder.to(device)
 
-    with open('sample_target_spec_1.pickle', 'rb') as file:
-        target_spec = pickle.load(file)
-    # plt.imshow(target_spec)
-    # plt.show()
-    target_spec = np.expand_dims(target_spec, axis=0)
-
     # Load the extracted n-dimensional features
     if model_name != 'GAN':
         with open('feat_dict/' + model_name + '/feat_dict_' + str(FEAT_DIM) + 'd.pickle', 'rb') as file:
@@ -99,59 +93,57 @@ def main():
 
         vib_feat = feat_dict['vib_feat']
         norm_scaler = MinMaxScaler()
-        norm_vib_feat = norm_scaler.fit_transform(vib_feat) # normalization
-
-        # Randomly choose a target spectrogram
-        # original_vib = feat_dict['original_vib']
-        # target_index = np.random.randint(0, len(original_vib))
-        # target_spec = original_vib[target_index]
+        norm_vib_feat = norm_scaler.fit_transform(vib_feat) # normalizatio
     
     else:
         with open('feat_dict/VAE/feat_dict_' + str(FEAT_DIM) + 'd.pickle', 'rb') as file:
             feat_dict = pickle.load(file)
         
-        # Randomly choose a target spectrogram
-        # original_vib = feat_dict['original_vib']
-        # target_index = np.random.randint(0, len(original_vib))
-        # target_spec = original_vib[target_index]
-    
-    target_spec = torch.unsqueeze(torch.tensor(target_spec), 0).to(device)
+    with open('original_vib.pickle', 'rb') as file:
+        original_vib = pickle.load(file)
 
-    optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(
-        num_dims=FEAT_DIM)
+    avg_loss = 0
 
-    optimizer.set_hyperparams(kernel_signal_var=0.50,
-                              kernel_length_scale=0.10,
-                              kernel_hyperparams_prior_var=0.10)
-    
-    optimizer.set_gaussian_process_upper_confidence_bound_hyperparam(5.)
+    for target_index in range(len(original_vib)):
+        print(target_index+1, '/', len(original_vib))
+        target_spec = original_vib[target_index]
+        target_spec = torch.unsqueeze(torch.tensor(target_spec), 0).to(device)
 
-    for i in range(20):
-        # slider_ends = optimizer.get_slider_ends()
-        if model_name != 'GAN':
-            slider_position = ask_human_for_slider_manipulation(optimizer, decoder, target_spec, norm_scaler)
-        else:
-            slider_position = ask_human_for_slider_manipulation(optimizer, decoder, target_spec)
-        optimizer.submit_feedback_data(slider_position)
 
-        optimized_vector = optimizer.get_maximizer()
-        # denormalization
-        optimized_vector = torch.unsqueeze(torch.tensor(optimized_vector), 0)
+        optimizer = pySequentialLineSearch.SequentialLineSearchOptimizer(
+            num_dims=FEAT_DIM)
 
-        if model_name != 'GAN':
-            optimized_vector = torch.tensor(norm_scaler.inverse_transform(optimized_vector)).to(torch.float32)
-        else:
-            optimized_vector = optimized_vector.to(torch.float32)
+        optimizer.set_hyperparams(kernel_signal_var=0.50,
+                                kernel_length_scale=0.10,
+                                kernel_hyperparams_prior_var=0.10)
+        
+        optimizer.set_gaussian_process_upper_confidence_bound_hyperparam(5.)
 
-        optimized_vector = optimized_vector.to(device)
-        decoded_spec = decoder(optimized_vector)
+        for i in range(10):
+            # slider_ends = optimizer.get_slider_ends()
+            if model_name != 'GAN':
+                slider_position = ask_human_for_slider_manipulation(optimizer, decoder, target_spec, norm_scaler)
+            else:
+                slider_position = ask_human_for_slider_manipulation(optimizer, decoder, target_spec)
+            optimizer.submit_feedback_data(slider_position)
 
-        mse = nn.MSELoss()
-        loss = mse(decoded_spec, target_spec).item()
-        print("[#iters = " + str(i + 1) + "], slider_position: " + str(slider_position) + ", loss: " + str(loss))
-    
-    plt.imshow(decoded_spec.squeeze().detach().numpy())
-    plt.show()
+            optimized_vector = optimizer.get_maximizer()
+            # denormalization
+            optimized_vector = torch.unsqueeze(torch.tensor(optimized_vector), 0)
+
+            if model_name != 'GAN':
+                optimized_vector = torch.tensor(norm_scaler.inverse_transform(optimized_vector)).to(torch.float32)
+            else:
+                optimized_vector = optimized_vector.to(torch.float32)
+
+            optimized_vector = optimized_vector.to(device)
+            decoded_spec = decoder(optimized_vector)
+
+            mse = nn.MSELoss()
+            loss = mse(decoded_spec, target_spec).item()
+        avg_loss += loss
+    avg_loss /= len(original_vib)
+    print('Avg loss: ', avg_loss)
 
 
 if __name__ == '__main__':
