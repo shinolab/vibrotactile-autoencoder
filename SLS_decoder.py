@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-27 01:30:06
+LastEditTime: 2023-04-27 15:45:08
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -24,7 +24,7 @@ from sklearn.preprocessing import MinMaxScaler
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 16
+FEAT_DIM = 8
 
 # A dummy implementation of slider manipulation
 def ask_human_for_slider_manipulation(optimizer, decoder, target_spec, norm_scaler=False):
@@ -86,7 +86,7 @@ def main():
     decoder.eval()
     decoder.to(device)
 
-    with open('sample_target_spec_1.pickle', 'rb') as file:
+    with open('sample_target_spec_2.pickle', 'rb') as file:
         target_spec = pickle.load(file)
     # plt.imshow(target_spec)
     # plt.show()
