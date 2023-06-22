@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-21 22:59:59
+LastEditTime: 2023-06-22 23:30:52
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -24,7 +24,7 @@ from sklearn.preprocessing import MinMaxScaler
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 512
+FEAT_DIM = 128
 
 def myFunc(decoder, zs):
     zs = torch.tensor(zs).to(torch.float32).to(device)
@@ -111,6 +111,8 @@ def main():
     init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
     init_z = np.matmul(random_A, init_low_z)
 
+    print(slider_length)
+
     optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*100, 
                       lambda zs: myFunc(decoder, zs), 
                       lambda xs: myGoodness(target_data, xs), 
@@ -121,10 +123,11 @@ def main():
     optimizer.init(init_z)
     best_score = optimizer.current_score
 
-    iter_num = 1000
+    iter_num = 500
     
     for i in range(iter_num):
-        opt_z, opt_x, opt_score, opt_t = optimizer.find_optimal(1000, batch_size=1000)
+        n_sample = 1000
+        opt_z, opt_x, opt_score, opt_t = optimizer.find_optimal(n_sample, batch_size=n_sample)
         if opt_score < best_score:
             best_score = opt_score
 
