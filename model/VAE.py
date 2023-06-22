@@ -2,13 +2,14 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:41:18
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-04-18 17:30:10
+LastEditTime: 2023-06-21 14:32:07
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 from torch import nn
 import torch.nn.functional as F
 import torch
+import numpy as np
 
 
 class Encoder(nn.Module):
@@ -52,6 +53,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, encoded_space_dim):
         super().__init__()
+        self.encoded_space_dim = encoded_space_dim
         self.fc1 = nn.Linear(encoded_space_dim, 32 * 1 * 23)
         self.unflatten = nn.Unflatten(dim=1, unflattened_size=(32, 1, 23))
 
@@ -68,6 +70,20 @@ class Decoder(nn.Module):
         x = F.relu(self.bn2(self.deconv2(x)))
         x = self.deconv3(x)
         return x
+    
+    def calc_model_gradient(self, latent_vector):
+        jacobian = self.calc_model_gradient_FDM(latent_vector, delta=1e-2)
+        return jacobian
+
+    def calc_model_gradient_FDM(self, latent_vector, delta=1e-4):
+        sample_latents = np.repeat(latent_vector.reshape(1, -1), repeats=self.encoded_space_dim + 1, axis=0)
+        sample_latents[1:] += np.identity(self.encoded_space_dim) * delta
+
+        sample_datas = self.forward(sample_latents)
+        sample_datas = sample_datas.reshape(-1, 12*100)
+
+        jacobian = (sample_datas[1:] - sample_datas[0]).T / delta
+        return jacobian
 
 
 class Classifier(nn.Module):
