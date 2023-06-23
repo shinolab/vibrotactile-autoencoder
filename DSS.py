@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-23 16:42:29
+LastEditTime: 2023-06-24 02:36:54
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -28,8 +28,8 @@ FEAT_DIM = 128
 
 def myFunc(decoder, denormalize, zs):
     zs = torch.tensor(zs).to(torch.float32).to(device)
-    # output = denormalize(decoder(zs)).reshape(zs.shape[0], -1)
-    output = decoder(zs).reshape(zs.shape[0], -1)
+    output = denormalize(decoder(zs)).reshape(zs.shape[0], -1)
+    # output = decoder(zs).reshape(zs.shape[0], -1)
     return output
 
 def myGoodness(target, xs):
