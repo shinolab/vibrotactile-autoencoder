@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-22 23:38:41
+LastEditTime: 2023-06-23 13:25:30
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -17,7 +17,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 from torch import nn
-from sklearn.preprocessing import MinMaxScaler
+from torchvision import transforms
 
 # device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 # device = torch.device("mps")
@@ -26,9 +26,10 @@ print(f'Selected device: {device}')
 
 FEAT_DIM = 128
 
-def myFunc(decoder, zs):
+def myFunc(decoder, denormalize, zs):
     zs = torch.tensor(zs).to(torch.float32).to(device)
-    return decoder(zs).reshape(zs.shape[0], -1)
+    output = denormalize(decoder(zs)).reshape(zs.shape[0], -1)
+    return output
 
 def myGoodness(target, xs):
     xs = torch.tensor(xs).to(torch.float32).to(device)
@@ -93,7 +94,11 @@ def main():
     # plt.imshow(target_spec)
     # plt.show()
     # target_spec = np.expand_dims(target_spec, axis=0)
-    
+    print(target_spec.mean(), target_spec.std())
+    mean = target_spec.mean()
+    std = target_spec.std()
+    denormalize = transforms.Normalize(-mean / std, 1.0 / std)
+
     target_data = torch.unsqueeze(torch.tensor(target_spec), 0).to(device)
 
     slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
@@ -114,7 +119,7 @@ def main():
     print(slider_length)
 
     optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*100, 
-                      lambda zs: myFunc(decoder, zs), 
+                      lambda zs: myFunc(decoder, denormalize, zs), 
                       lambda xs: myGoodness(target_data, xs), 
                       slider_length, 
                       lambda z: myJacobian(decoder, z), 
@@ -123,7 +128,7 @@ def main():
     optimizer.init(init_z)
     best_score = optimizer.current_score
 
-    iter_num = 500
+    iter_num = 20
     
     for i in range(iter_num):
         n_sample = 1000
