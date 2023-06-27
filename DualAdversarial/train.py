@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-28 03:48:44
+LastEditTime: 2023-06-28 03:51:16
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import pickle
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn import preprocessing
 from torchvision import transforms
 from torch.utils.data import DataLoader
