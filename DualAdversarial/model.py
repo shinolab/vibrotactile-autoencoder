@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-28 03:49:38
+LastEditTime: 2023-06-29 08:41:44
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -37,13 +37,26 @@ class ResNetEncoder(nn.Module):
 class LatentDiscriminator(nn.Module):
     def __init__(self, encoded_space_dim):
         super(LatentDiscriminator, self).__init__()
-        self.fc1 = nn.Linear(encoded_space_dim, 64)
-        self.fc2 = nn.Linear(64, 16)
-        self.fc3 = nn.Linear(16, 1)
+
+        self.flatten = nn.Flatten(start_dim=1)
+        self.unflatten = nn.Unflatten(dim=1, unflattened_size=(1, 16, 8))
+
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(in_channels=64, out_channels=256, kernel_size=5, stride=1, padding=2, bias=False)
+        self.conv3 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, bias=False)
+        self.fc1 = nn.Linear(encoded_space_dim * 256, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 1)
 
     def forward(self, x):
-        x = F.leaky_relu(self.fc1(x), 0.2)
-        x = F.leaky_relu(self.fc2(x), 0.2)
+        x = self.unflatten(x)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = self.flatten(x)
+
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
         x = F.sigmoid(self.fc3(x))
         return x
 

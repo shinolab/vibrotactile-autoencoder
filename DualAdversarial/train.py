@@ -2,9 +2,10 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-28 15:05:59
+LastEditTime: 2023-06-29 08:42:19
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,6 +19,7 @@ from scipy import stats
 import torch.nn.functional as F
 import torch.optim as optim
 import model
+import time
 
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -44,7 +46,7 @@ train_dataloader = torch.utils.data.DataLoader(
     dataset = train_dataset,
     batch_size = 64,
     shuffle = True,
-    num_workers = 2,
+    num_workers = 0,
     )
 
 adversarial_loss = nn.BCELoss()
@@ -74,6 +76,7 @@ epoch_num = 150
 
 EPS = 1e-15
 
+tic = time.time()
 for epoch in range(1, epoch_num + 1):
     encoder.train()
     dis_latent.train()
@@ -86,12 +89,10 @@ for epoch in range(1, epoch_num + 1):
         label = label.to(device)
 
         soft_scale = 0.1
-        valid = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(1.0), requires_grad=False)
-        valid -= torch.rand(img.size(0), 1) * soft_scale
-        valid = valid.to(device)
-        fake = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(0.0), requires_grad=False)
-        fake += torch.rand(img.size(0), 1) * soft_scale
-        fake = fake.to(device)
+        valid = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(1.0), requires_grad=False).to(device)
+        soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
+        fake = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(0.0), requires_grad=False).to(device)
+        soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
 
         # 1) reconstruction
         # 1.1) generator
@@ -100,7 +101,7 @@ for epoch in range(1, epoch_num + 1):
         z = encoder(img)
         # train generator
         gen_img = generator(z)
-        g_loss = adversarial_loss(dis_spec(gen_img), valid)
+        g_loss = adversarial_loss(dis_spec(gen_img), soft_valid)
         g_loss.backward()
         optimizer_G.step()
 
@@ -118,8 +119,8 @@ for epoch in range(1, epoch_num + 1):
         noise_g = torch.normal(means, std).to(device)
 
         # Measure discriminator's ability to classify real from generated samples
-        real_loss = adversarial_loss(dis_spec(img + noise_r), valid)
-        fake_loss = adversarial_loss(dis_spec(gen_img.detach() + noise_g), fake)
+        real_loss = adversarial_loss(dis_spec(img + noise_r), soft_valid)
+        fake_loss = adversarial_loss(dis_spec(gen_img.detach() + noise_g), soft_fake)
         d_spec_loss = (real_loss + fake_loss) / 2
 
         d_spec_loss.backward()
@@ -127,41 +128,41 @@ for epoch in range(1, epoch_num + 1):
         optimizer_E.step()
 
         # 2) latent discriminator
-        encoder.eval()
-
         real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
         fake_z = encoder(img)
 
-        # print('Training the discriminator')
-        # u = fake_z[0].detach().numpy().mean()
-        # std = fake_z[0].detach().numpy().std()
-        # kstest = stats.kstest(fake_z[0].detach().numpy(), 'norm', (u, std))
-        # print('pvalue:' + str(kstest.pvalue))
+        # D_real_gauss = dis_latent(real_z)
+        # D_fake_gauss = dis_latent(fake_z.detach())
+        # d_latent_loss = -torch.mean(torch.log(D_real_gauss + EPS) + torch.log(1 - D_fake_gauss + EPS))
 
-        D_real_gauss = dis_latent(real_z)
-        D_fake_gauss = dis_latent(fake_z)
-
-        d_latent_loss = -torch.mean(torch.log(D_real_gauss + EPS) + torch.log(1 - D_fake_gauss + EPS))
+        real_loss = adversarial_loss(dis_latent(real_z), valid)
+        fake_loss = adversarial_loss(dis_latent(fake_z.detach()), fake)
+        d_latent_loss = (real_loss + fake_loss) / 2
         d_latent_loss.backward()
         optimizer_D_latent.step()
 
         # 3) encoder
-        encoder.train()
         fake_z = encoder(img)
-        # print('Training the encoder')
-        # u = fake_z[0].detach().numpy().mean()
-        # std = fake_z[0].detach().numpy().std()
-        # kstest = stats.kstest(fake_z[0].detach().numpy(), 'norm', (u, std))
-        # print('pvalue:' + str(kstest.pvalue))
 
-        D_fake_gauss = dis_latent(fake_z)
-        E_loss = -torch.mean(torch.log(D_fake_gauss + EPS))
+        # D_fake_gauss = dis_latent(fake_z)
+        # E_loss = -torch.mean(torch.log(D_fake_gauss + EPS))
+
+        E_loss = adversarial_loss(dis_latent(fake_z), valid)
         E_loss.backward()
         optimizer_E.step()
 
-    print('Epoch: ', epoch)
+    toc = time.time()
+    print('=====================================================================')
+    print('Epoch: ', epoch, '\tAccumulated time: ', round((toc - tic) / 3600, 4), ' hours')
     print('Generator Loss: ', round(g_loss.item(), 4), '\tSpec Discriminator Loss: ', round(d_spec_loss.item(), 4))
     print('Encoder Loss: ', round(E_loss.item(), 4), '\tLatent Discriminator Loss: ', round(d_latent_loss.item(), 4))
+
+    fake_z_sample = torch.flatten(fake_z.cpu().detach(), start_dim=1).numpy()
+    u = fake_z_sample.mean()
+    std = fake_z_sample.std()
+    kstest = stats.kstest(fake_z_sample, 'norm', (u, std))
+    print('pvalue (latent space vs gaussian distribution): ' + str(kstest.pvalue))
+    print('=====================================================================\n')
 
 torch.save(generator.state_dict(), 'weights/generator_' + str(FEAT_DIM) + 'd.pt')
 torch.save(dis_spec.state_dict(), 'weights/dis_spec_' + str(FEAT_DIM) + 'd.pt')
