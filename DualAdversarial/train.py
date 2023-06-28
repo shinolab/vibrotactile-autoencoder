@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-28 03:51:16
+LastEditTime: 2023-06-28 15:05:59
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -132,11 +132,11 @@ for epoch in range(1, epoch_num + 1):
         real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
         fake_z = encoder(img)
 
-        print('Training the discriminator')
-        u = fake_z[0].detach().numpy().mean()
-        std = fake_z[0].detach().numpy().std()
-        kstest = stats.kstest(fake_z[0].detach().numpy(), 'norm', (u, std))
-        print('pvalue:' + str(kstest.pvalue))
+        # print('Training the discriminator')
+        # u = fake_z[0].detach().numpy().mean()
+        # std = fake_z[0].detach().numpy().std()
+        # kstest = stats.kstest(fake_z[0].detach().numpy(), 'norm', (u, std))
+        # print('pvalue:' + str(kstest.pvalue))
 
         D_real_gauss = dis_latent(real_z)
         D_fake_gauss = dis_latent(fake_z)
@@ -148,11 +148,11 @@ for epoch in range(1, epoch_num + 1):
         # 3) encoder
         encoder.train()
         fake_z = encoder(img)
-        print('Training the encoder')
-        u = fake_z[0].detach().numpy().mean()
-        std = fake_z[0].detach().numpy().std()
-        kstest = stats.kstest(fake_z[0].detach().numpy(), 'norm', (u, std))
-        print('pvalue:' + str(kstest.pvalue))
+        # print('Training the encoder')
+        # u = fake_z[0].detach().numpy().mean()
+        # std = fake_z[0].detach().numpy().std()
+        # kstest = stats.kstest(fake_z[0].detach().numpy(), 'norm', (u, std))
+        # print('pvalue:' + str(kstest.pvalue))
 
         D_fake_gauss = dis_latent(fake_z)
         E_loss = -torch.mean(torch.log(D_fake_gauss + EPS))
