@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-29 08:48:43
+LastEditTime: 2023-06-29 09:26:16
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -157,7 +157,7 @@ for epoch in range(1, epoch_num + 1):
     print('Generator Loss: ', round(g_loss.item(), 4), '\tSpec Discriminator Loss: ', round(d_spec_loss.item(), 4))
     print('Encoder Loss: ', round(E_loss.item(), 4), '\tLatent Discriminator Loss: ', round(d_latent_loss.item(), 4))
 
-    fake_z_sample = torch.flatten(fake_z.cpu().detach()).numpy()
+    fake_z_sample = fake_z[0].cpu().detach().numpy()
     u = fake_z_sample.mean()
     std = fake_z_sample.std()
     kstest = stats.kstest(fake_z_sample, 'norm', (u, std))
