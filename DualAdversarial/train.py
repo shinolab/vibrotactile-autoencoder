@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-29 09:26:16
+LastEditTime: 2023-06-29 15:37:01
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -18,7 +18,7 @@ from torch import nn
 from scipy import stats
 import torch.nn.functional as F
 import torch.optim as optim
-import model
+import ResNet50_SRResNet
 import time
 
 
@@ -101,7 +101,7 @@ for epoch in range(1, epoch_num + 1):
         z = encoder(img)
         # train generator
         gen_img = generator(z)
-        g_loss = adversarial_loss(dis_spec(gen_img), soft_valid)
+        g_loss = adversarial_loss(dis_spec(gen_img), valid)
         g_loss.backward()
         optimizer_G.step()
 
@@ -112,7 +112,7 @@ for epoch in range(1, epoch_num + 1):
         means = torch.zeros(s1,s2,s3,s4)
         std = torch.ones(s1,s2,s3,s4)
 
-        sigma = 1
+        sigma = 5
         std = std * sigma
 
         noise_r = torch.normal(means, std).to(device)
