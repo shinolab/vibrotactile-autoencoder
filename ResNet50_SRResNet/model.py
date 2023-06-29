@@ -50,9 +50,9 @@ class LatentDiscriminator(nn.Module):
 
     def forward(self, x):
         x = self.unflatten(x)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
+        x = F.leaky_relu(self.conv1(x), 0.2)
+        x = F.leaky_relu(self.conv2(x), 0.2)
+        x = F.leaky_relu(self.conv3(x), 0.2)
         x = self.flatten(x)
 
         x = F.leaky_relu(self.fc1(x), 0.2)
