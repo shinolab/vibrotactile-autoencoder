@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-29 15:37:01
+LastEditTime: 2023-06-29 15:38:11
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -52,10 +52,10 @@ train_dataloader = torch.utils.data.DataLoader(
 adversarial_loss = nn.BCELoss()
 
 FEAT_DIM = 128
-encoder = model.ResNetEncoder(encoded_space_dim = FEAT_DIM)
-generator= model.Generator(encoded_space_dim = FEAT_DIM)
-dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
-dis_spec = model.SpectrogramDiscriminator()
+encoder = ResNet50_SRResNet.ResNetEncoder(encoded_space_dim = FEAT_DIM)
+generator= ResNet50_SRResNet.Generator(encoded_space_dim = FEAT_DIM)
+dis_latent = ResNet50_SRResNet.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
+dis_spec = ResNet50_SRResNet.SpectrogramDiscriminator()
 
 gen_lr = 2e-4
 encoder_lr = 2e-4
