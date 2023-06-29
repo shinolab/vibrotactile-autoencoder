@@ -115,19 +115,9 @@ for epoch in range(1, epoch_num + 1):
         # 1.2) spectrogram discriminator
         optimizer_D_spec.zero_grad()
 
-        s1, s2, s3, s4 = img.shape
-        means = torch.zeros(s1,s2,s3,s4)
-        std = torch.ones(s1,s2,s3,s4)
-
-        sigma = 0
-        std = std * sigma
-
-        noise_r = torch.normal(means, std).to(device)
-        noise_g = torch.normal(means, std).to(device)
-
         # Measure discriminator's ability to classify real from generated samples
-        real_loss = adversarial_loss(dis_spec(img + noise_r), soft_valid)
-        fake_loss = adversarial_loss(dis_spec(gen_img.detach() + noise_g), soft_fake)
+        real_loss = adversarial_loss(dis_spec(img), soft_valid)
+        fake_loss = adversarial_loss(dis_spec(gen_img.detach()), soft_fake)
         d_spec_loss = (real_loss + fake_loss) / 2
 
         d_spec_loss.backward()
@@ -141,8 +131,8 @@ for epoch in range(1, epoch_num + 1):
             real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
             fake_z = encoder(img)
 
-            real_loss = adversarial_loss(dis_latent(real_z), valid)
-            fake_loss = adversarial_loss(dis_latent(fake_z.detach()), fake)
+            real_loss = adversarial_loss(dis_latent(real_z), soft_valid)
+            fake_loss = adversarial_loss(dis_latent(fake_z.detach()), soft_fake)
             d_latent_loss = (real_loss + fake_loss) / 2
             d_latent_loss.backward()
             optimizer_D_latent.step()
