@@ -58,7 +58,7 @@ generator= model.Generator(encoded_space_dim = FEAT_DIM)
 dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator()
 
-gen_lr = 1e-4
+gen_lr = 5e-5
 encoder_lr = 1e-4
 d_spec_lr = 1e-4
 d_latent_lr = 1e-4

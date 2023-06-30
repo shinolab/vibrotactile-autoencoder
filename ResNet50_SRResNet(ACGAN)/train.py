@@ -51,6 +51,7 @@ train_dataloader = torch.utils.data.DataLoader(
     )
 
 adversarial_loss = nn.BCELoss()
+auxiliary_loss = nn.CrossEntropyLoss()
 
 FEAT_DIM = 128
 encoder = model.ResNetEncoder(encoded_space_dim = FEAT_DIM)
@@ -58,15 +59,15 @@ generator= model.Generator(encoded_space_dim = FEAT_DIM)
 dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator()
 
-gen_lr = 1e-4
-encoder_lr = 5e-5
+gen_lr = 5e-5
+encoder_lr = 1e-4
 d_spec_lr = 1e-4
-d_latent_lr = 5e-5
+d_latent_lr = 1e-4
 
-optimizer_G = optim.RMSprop(generator.parameters(), lr=gen_lr)
-optimizer_E = optim.RMSprop(encoder.parameters(), lr=encoder_lr)
-optimizer_D_spec = optim.RMSprop(dis_spec.parameters(), lr=d_spec_lr)
-optimizer_D_latent = optim.RMSprop(dis_latent.parameters(), lr=d_latent_lr)
+optimizer_G = optim.Adam(generator.parameters(), lr=gen_lr)
+optimizer_E = optim.Adam(encoder.parameters(), lr=encoder_lr)
+optimizer_D_spec = optim.Adam(dis_spec.parameters(), lr=d_spec_lr)
+optimizer_D_latent = optim.Adam(dis_latent.parameters(), lr=d_latent_lr)
 
 encoder.to(device)
 dis_latent.to(device)
@@ -93,60 +94,59 @@ for epoch in range(1, epoch_num + 1):
         img = img.to(device)
         label = label.to(device)
 
+        soft_scale = 0.1
         valid = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(1.0), requires_grad=False).to(device)
+        soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
         fake = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(0.0), requires_grad=False).to(device)
+        soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
 
         # 1) reconstruction
-        # 1.1) spectrogram discriminator
-        # train netd more: because the better netd is,
-        # the better netg will be
-        for stepp in range(5):
-            for parm in dis_spec.parameters():
-                clamp_num = 0.01 # WGAN clip gradient
-                parm.data.clamp_(-clamp_num, clamp_num)
-
-            optimizer_D_spec.zero_grad()
-            # Measure discriminator's ability to classify real from generated samples
-            real_output = dis_spec(img)
-
+        # 1.1) generator
+        for i in range(5):
+            optimizer_G.zero_grad()
+            # input latent vector
             z = encoder(img)
-            gen_img = generator(z).detach()
-            fake_output = dis_spec(gen_img)
+            # train generator
+            gen_img = generator(z)
+            output_d, output_c = dis_spec(gen_img)
 
-            d_spec_loss = -torch.mean(real_output - fake_output)
-            d_spec_loss.backward()
-            optimizer_D_spec.step()
-
-        writer.add_scalar('Spectrogram/D_loss', d_spec_loss.item(), batch_num)
-
-        # 1.2) generator
-        optimizer_G.zero_grad()
-        # input latent vector
-        z = encoder(img)
-        # train generator
-        gen_img = generator(z)
-        fake_output = dis_spec(gen_img)
-        g_loss = -torch.mean(fake_output)
-        g_loss.backward()
-
-        optimizer_G.step()
+            g_loss = (adversarial_loss(output_d, valid) + auxiliary_loss(output_c, label)) / 2
+            g_loss.backward()
+            optimizer_G.step()
 
         writer.add_scalar('Spectrogram/G_loss', g_loss.item(), batch_num)
 
+        # 1.2) spectrogram discriminator
+        optimizer_D_spec.zero_grad()
+        # loss for real img
+        output_d, output_c = dis_spec(img)
+        real_loss = (adversarial_loss(output_d, soft_valid) + auxiliary_loss(output_c, label)) / 2
+
+        # loss for fake img
+        output_d, output_c = dis_spec(gen_img.detach())
+        fake_loss = (adversarial_loss(output_d, soft_fake) + auxiliary_loss(output_c, label)) / 2
+
+        d_spec_loss = (real_loss + fake_loss) / 2
+
+        d_spec_loss.backward()
+        optimizer_D_spec.step()
+
+        writer.add_scalar('Spectrogram/D_loss', d_spec_loss.item(), batch_num)
+
         # 2) latent discriminator
-        for stepp in range(5):
-            for parm in dis_latent.parameters():
-                clamp_num = 0.01 # WGAN clip gradient
-                parm.data.clamp_(-clamp_num, clamp_num)
-
+        for i in range(5):
             optimizer_D_latent.zero_grad()
-
             real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
             fake_z = encoder(img)
 
-            real_output = dis_latent(real_z)
-            fake_output = dis_latent(fake_z.detach())
-            d_latent_loss = -torch.mean(real_output - fake_output)
+            # loss for real distribution
+            output_d, output_c = dis_latent(real_z)
+            real_loss = (adversarial_loss(output_d, soft_valid) + auxiliary_loss(output_c, label)) / 2
+            # loss for fake distribution
+            output_d, output_c = dis_latent(fake_z.detach())
+            fake_loss = (adversarial_loss(output_d, soft_fake) + auxiliary_loss(output_c, label)) / 2
+
+            d_latent_loss = (real_loss + fake_loss) / 2
             d_latent_loss.backward()
             optimizer_D_latent.step()
 
@@ -156,7 +156,9 @@ for epoch in range(1, epoch_num + 1):
         optimizer_E.zero_grad()
         fake_z = encoder(img)
 
-        E_loss = -torch.mean(dis_latent(fake_z))
+        output_d, output_c = dis_latent(fake_z)
+
+        E_loss = (adversarial_loss(output_d, valid) + auxiliary_loss(output_c, label)) / 2
         E_loss.backward()
         optimizer_E.step()
 
