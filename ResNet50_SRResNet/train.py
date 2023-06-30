@@ -101,14 +101,15 @@ for epoch in range(1, epoch_num + 1):
 
         # 1) reconstruction
         # 1.1) generator
-        optimizer_G.zero_grad()
-        # input latent vector
-        z = encoder(img)
-        # train generator
-        gen_img = generator(z)
-        g_loss = adversarial_loss(dis_spec(gen_img), valid)
-        g_loss.backward()
-        optimizer_G.step()
+        for i in range(5):
+            optimizer_G.zero_grad()
+            # input latent vector
+            z = encoder(img)
+            # train generator
+            gen_img = generator(z)
+            g_loss = adversarial_loss(dis_spec(gen_img), valid)
+            g_loss.backward()
+            optimizer_G.step()
 
         writer.add_scalar('Spectrogram/G_loss', g_loss.item(), batch_num)
 
