@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-01 18:57:37
+LastEditTime: 2023-07-01 21:13:22
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -13,7 +13,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 
-FEAT_DIM = 128
+FEAT_DIM = 512
 
 class GlobalOptimizer():
     def __init__(self, n, m, f, g, search_range, maximizer=True):
