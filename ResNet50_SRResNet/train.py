@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-28 03:51:16
+LastEditTime: 2023-07-01 13:42:46
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -58,7 +58,7 @@ generator= model.Generator(encoded_space_dim = FEAT_DIM)
 dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator()
 
-gen_lr = 5e-5
+gen_lr = 1e-4
 encoder_lr = 1e-4
 d_spec_lr = 1e-4
 d_latent_lr = 1e-4
