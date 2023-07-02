@@ -35,12 +35,15 @@ texture = trainset['texture']
 le = preprocessing.LabelEncoder()
 labels = torch.as_tensor(le.fit_transform(texture))
 
-transform_spec = transforms.Normalize(
-    mean = spectrogram.mean(),
-    std = spectrogram.std()
-)
+# transform to [-1, 1]
+def Normalization(X):
+    Xmin = X.min()
+    Xmax = X.max()
+    X_norm = (X - Xmin) / (Xmax - Xmin)
+    X_norm = 2 * X_norm - 1
+    return X_norm
 
-spectrogram = transform_spec(spectrogram)
+spectrogram = Normalization(spectrogram)
 
 train_dataset = torch.utils.data.TensorDataset(spectrogram, labels)
 train_dataloader = torch.utils.data.DataLoader(
@@ -58,7 +61,7 @@ generator= model.Generator(encoded_space_dim = FEAT_DIM)
 dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator()
 
-gen_lr = 5e-5
+gen_lr = 1e-4
 encoder_lr = 1e-4
 d_spec_lr = 1e-4
 d_latent_lr = 1e-4
@@ -75,7 +78,7 @@ dis_spec.to(device)
 
 epoch_num = 150
 
-writer = SummaryWriter(os.path.join(current_dir, 'runs', 'train'))
+writer = SummaryWriter()
 
 tic = time.time()
 batch_num = 0
@@ -169,7 +172,7 @@ for epoch in range(1, epoch_num + 1):
 
 writer.close()
 
-torch.save(generator.state_dict(), 'weights/generator_' + str(FEAT_DIM) + 'd.pt')
-torch.save(dis_spec.state_dict(), 'weights/dis_spec_' + str(FEAT_DIM) + 'd.pt')
-torch.save(encoder.state_dict(), 'weights/encoder_' + str(FEAT_DIM) + 'd.pt')
-torch.save(dis_latent.state_dict(), 'weights/dis_latent_' + str(FEAT_DIM) + 'd.pt')
+torch.save(generator.state_dict(), 'generator_' + str(FEAT_DIM) + 'd.pt')
+torch.save(dis_spec.state_dict(), 'dis_spec_' + str(FEAT_DIM) + 'd.pt')
+torch.save(encoder.state_dict(), 'encoder_' + str(FEAT_DIM) + 'd.pt')
+torch.save(dis_latent.state_dict(), 'dis_latent_' + str(FEAT_DIM) + 'd.pt')
