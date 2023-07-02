@@ -33,7 +33,9 @@ with open(file_path, 'rb') as file:
 spectrogram = torch.from_numpy(trainset['spectrogram'].astype(np.float32))
 texture = trainset['texture']
 le = preprocessing.LabelEncoder()
-labels = torch.as_tensor(le.fit_transform(texture))
+onehot = preprocessing.OneHotEncoder()
+labels = le.fit_transform(texture)
+labels = torch.as_tensor(onehot.fit_transform(labels.reshape(-1, 1)).toarray())
 
 # transform to [-1, 1]
 def Normalization(X):
@@ -56,7 +58,9 @@ train_dataloader = torch.utils.data.DataLoader(
 adversarial_loss = nn.BCELoss()
 auxiliary_loss = nn.CrossEntropyLoss()
 
-FEAT_DIM = 128
+FEAT_DIM = 256
+CLASS_NUM = 108
+
 generator= model.Generator(encoded_space_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator()
 
@@ -97,7 +101,8 @@ for epoch in range(1, epoch_num + 1):
         for i in range(5):
             optimizer_G.zero_grad()
             # input latent vector
-            z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
+            z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM - CLASS_NUM)))).to(device)
+            z = torch.cat((z, label), dim=1)
             # train generator
             gen_img = generator(z)
             output_d, output_c = dis_spec(gen_img)
@@ -115,7 +120,8 @@ for epoch in range(1, epoch_num + 1):
         real_loss = (adversarial_loss(output_d, soft_valid) + auxiliary_loss(output_c, label)) / 2
 
         # loss for fake img
-        z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
+        z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM - CLASS_NUM)))).to(device)
+        z = torch.cat((z, label), dim=1)
         gen_img = generator(z)
         output_d, output_c = dis_spec(gen_img.detach())
         fake_loss = (adversarial_loss(output_d, soft_fake) + auxiliary_loss(output_c, label)) / 2
