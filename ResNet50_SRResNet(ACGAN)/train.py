@@ -120,6 +120,9 @@ for epoch in range(1, epoch_num + 1):
 
         # 1.2) spectrogram discriminator
         optimizer_D_spec.zero_grad()
+        z = encoder(img)
+        gen_img = generator(z)
+        
         # loss for real img
         output_d, output_c = dis_spec(img)
         real_loss = (adversarial_loss(output_d, soft_valid) + auxiliary_loss(output_c, label)) / 2
