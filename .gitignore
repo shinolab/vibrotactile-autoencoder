@@ -1,0 +1,10 @@
+.git
+.ipynb_checkpoints
+.DS_Store
+LMT_108_SurfaceMaterials_Database
+training_vis
+DL-gpu
+feat_dict
+figure
+*.pickle
+*.png
