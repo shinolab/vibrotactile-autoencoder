@@ -1,4 +1,5 @@
 .git
+.gitignore
 .ipynb_checkpoints
 .DS_Store
 LMT_108_SurfaceMaterials_Database
