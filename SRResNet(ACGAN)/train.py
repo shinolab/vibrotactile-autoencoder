@@ -21,6 +21,21 @@ from torch.utils.tensorboard import SummaryWriter
 from torch import nn
 from scipy import stats
 
+import matplotlib.pyplot as plt
+import numpy as np
+import torch.optim as optim
+import model
+import time
+import torch
+import pickle
+import os
+from sklearn import preprocessing
+from torchvision import transforms
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+from torch import nn
+from scipy import stats
+
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 print(f'Selected device: {device}')
 
@@ -90,7 +105,7 @@ for epoch in range(1, epoch_num + 1):
         img = img.to(device)
         label = label.to(device)
 
-        soft_scale = 0.1
+        soft_scale = 0.3
         valid = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(1.0), requires_grad=False).to(device)
         soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
         fake = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(0.0), requires_grad=False).to(device)
@@ -102,7 +117,7 @@ for epoch in range(1, epoch_num + 1):
             optimizer_G.zero_grad()
             # input latent vector
             z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM - CLASS_NUM)))).to(device)
-            z = torch.cat((z, label), dim=1)
+            z = torch.cat((z, label), dim=1).to(torch.float32)
             # train generator
             gen_img = generator(z)
             output_d, output_c = dis_spec(gen_img)
@@ -121,7 +136,7 @@ for epoch in range(1, epoch_num + 1):
 
         # loss for fake img
         z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM - CLASS_NUM)))).to(device)
-        z = torch.cat((z, label), dim=1)
+        z = torch.cat((z, label), dim=1).to(torch.float32)
         gen_img = generator(z)
         output_d, output_c = dis_spec(gen_img.detach())
         fake_loss = (adversarial_loss(output_d, soft_fake) + auxiliary_loss(output_c, label)) / 2
@@ -135,8 +150,16 @@ for epoch in range(1, epoch_num + 1):
 
     toc = time.time()
 
-    writer.add_image('Real Spectrogram', img[0], epoch)
-    writer.add_image('Fake Spectrogram', gen_img[0], epoch)
+    writer.add_image('Real Spectrogram 1', img[0], epoch)
+    writer.add_image('Real Spectrogram 2', img[1], epoch)
+    writer.add_image('Real Spectrogram 3', img[2], epoch)
+    writer.add_image('Real Spectrogram 4', img[3], epoch)
+    writer.add_image('Real Spectrogram 5', img[4], epoch)
+    writer.add_image('Fake Spectrogram 1', gen_img[0], epoch)
+    writer.add_image('Fake Spectrogram 2', gen_img[1], epoch)
+    writer.add_image('Fake Spectrogram 3', gen_img[2], epoch)
+    writer.add_image('Fake Spectrogram 4', gen_img[3], epoch)
+    writer.add_image('Fake Spectrogram 5', gen_img[4], epoch)
 
     print('=====================================================================')
     print('Epoch: ', epoch, '\tAccumulated time: ', round((toc - tic) / 3600, 4), ' hours')
