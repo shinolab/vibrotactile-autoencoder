@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-20 21:02:34
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-21 00:45:50
+LastEditTime: 2023-07-04 01:05:05
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys, os
@@ -29,7 +29,7 @@ class JacobianOptimizer(GlobalOptimizer):
 
     def update_jacobian(self, z):
         self.jacobian = self.jacobian_func(z)
-        u, s, vh = np.linalg.svd(self.jacobian.detach(), full_matrices=True)
+        u, s, vh = np.linalg.svd(self.jacobian.cpu().detach(), full_matrices=True)
 
         num = s.shape[0]
         self.jacobian_vhs = vh[:num]

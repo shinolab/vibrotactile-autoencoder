@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-04 00:32:44
+LastEditTime: 2023-07-04 01:14:56
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -24,7 +24,16 @@ print(f'Selected device: {device}')
 
 FEAT_DIM = 256
 
-def myFunc(decoder, denormalize, zs):
+def denormalize(img):
+    # Min of original data: -80
+    # Max of original data: 0
+    origin_max = 0.
+    origin_min = -80.
+    img = (img + 1) / 2 # from [-1, 1] back to [0, 1]
+    denormalized_img = img * (origin_max - origin_min) + origin_min
+    return denormalized_img
+
+def myFunc(decoder, zs):
     zs = torch.tensor(zs).to(torch.float32).to(device)
     output = denormalize(decoder(zs)).reshape(zs.shape[0], -1)
     # output = decoder(zs).reshape(zs.shape[0], -1)
@@ -32,11 +41,11 @@ def myFunc(decoder, denormalize, zs):
 
 def myGoodness(target, xs):
     xs = torch.tensor(xs).to(torch.float32).to(device)
-    return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).detach().numpy() ** 2, axis=1) ** 0.5
+    return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).cpu().detach().numpy() ** 2, axis=1) ** 0.5
 
 def myJacobian(model, z):
     z = torch.tensor(z).to(torch.float32).to(device)
-    return model.calc_model_gradient(z)
+    return model.calc_model_gradient(z, device)
 
 def getSliderLength(n, boundary_range, ratio, sample_num=1000):
     samples = np.random.uniform(low=-boundary_range, high=boundary_range, size=(sample_num, 2, n))
@@ -75,15 +84,8 @@ def main():
 
     with open('sample_target_spec_1.pickle', 'rb') as file:
         target_spec = pickle.load(file)
-    # plt.imshow(target_spec)
-    # plt.show()
-    # target_spec = np.expand_dims(target_spec, axis=0)
-    print(target_spec.mean(), target_spec.std())
-    mean = target_spec.mean()
-    std = target_spec.std()
-    denormalize = transforms.Normalize(-mean / std, 1.0 / std)
 
-    target_data = torch.unsqueeze(torch.tensor(target_spec), 0).to(device)
+    target_data = torch.unsqueeze(torch.tensor(target_spec), 0).to(torch.float32).to(device)
 
     slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
     target_latent = np.random.uniform(-1, 1, FEAT_DIM)
@@ -91,7 +93,7 @@ def main():
     # target_data = decoder(target_latent.reshape(1, -1))[0]
 
     while True:
-        random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1)), 1)
+        random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
         if random_A is not None:
             break
     # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
@@ -102,8 +104,8 @@ def main():
 
     print(slider_length)
 
-    optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*100, 
-                      lambda zs: myFunc(decoder, denormalize, zs), 
+    optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*160, 
+                      lambda zs: myFunc(decoder, zs), 
                       lambda xs: myGoodness(target_data, xs), 
                       slider_length, 
                       lambda z: myJacobian(decoder, z), 
@@ -112,7 +114,7 @@ def main():
     optimizer.init(init_z)
     best_score = optimizer.current_score
 
-    iter_num = 1000
+    iter_num = 20
     
     for i in range(iter_num):
         n_sample = 1000
@@ -125,9 +127,9 @@ def main():
 
     fig, ax = plt.subplots(2, 1, figsize=(5, 3)) 
     fig.suptitle('Iter num = ' + str(iter_num) + ', loss = ' + str(best_score), fontsize=16)
-    ax[0].imshow(target_spec.reshape(12, 100)) 
+    ax[0].imshow(target_spec.reshape(12, 160)) 
     ax[0].set_title("Original") 
-    ax[1].imshow(opt_x.detach().numpy().reshape(12, 100)) 
+    ax[1].imshow(opt_x.cpu().detach().numpy().reshape(12, 160)) 
     ax[1].set_title("Generated")
     plt.show()
 

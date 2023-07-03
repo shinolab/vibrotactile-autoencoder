@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-01 21:13:22
+LastEditTime: 2023-07-04 01:17:05
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -13,7 +13,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 
-FEAT_DIM = 512
+FEAT_DIM = 256
 
 class GlobalOptimizer():
     def __init__(self, n, m, f, g, search_range, maximizer=True):
@@ -132,7 +132,7 @@ def calc_model_gradient_FDM(model, latent_vector, delta=1e-4):
     sample_latents[1:] += np.identity(FEAT_DIM) * delta
 
     sample_datas = model.inverse_transform(sample_latents)
-    sample_datas = sample_datas.reshape(-1, 12*100)
+    sample_datas = sample_datas.reshape(-1, 12*160)
 
     jacobian = (sample_datas[1:] - sample_datas[0]).T / delta
     return jacobian
@@ -172,7 +172,7 @@ def getRandomAMatrix(high_dim, dim, optimals, range):
         return None
 
 def main():
-    with open('trainset.pickle', 'rb') as file:
+    with open('trainset_LMT_large.pickle', 'rb') as file:
         data = pickle.load(file)
 
     X = data['spectrogram']
@@ -182,7 +182,7 @@ def main():
     pca = PCA(n_components=FEAT_DIM) 
     X_reduced = pca.fit_transform(X)
 
-    with open('sample_target_spec_2.pickle', 'rb') as file:
+    with open('sample_target_spec_1.pickle', 'rb') as file:
         target_spec = pickle.load(file)
     # plt.imshow(target_spec)
     # plt.show()
@@ -204,7 +204,7 @@ def main():
 
     print(slider_length)
 
-    optimizer = JacobianOptimizer(FEAT_DIM, 12*100, 
+    optimizer = JacobianOptimizer(FEAT_DIM, 12*160, 
                       lambda zs: myFunc(pca, zs), 
                       lambda xs: myGoodness(target_spec, xs), 
                       slider_length, 
@@ -227,9 +227,9 @@ def main():
 
     fig, ax = plt.subplots(2, 1, figsize=(5, 3)) 
     fig.suptitle('Iter num = ' + str(iter_num) + ', loss = ' + str(best_score), fontsize=16)
-    ax[0].imshow(target_spec.reshape(12, 100)) 
+    ax[0].imshow(target_spec.reshape(12, 160)) 
     ax[0].set_title("Original") 
-    ax[1].imshow(opt_x.reshape(12, 100)) 
+    ax[1].imshow(opt_x.reshape(12, 160)) 
     ax[1].set_title("Generated")
     plt.show()
 

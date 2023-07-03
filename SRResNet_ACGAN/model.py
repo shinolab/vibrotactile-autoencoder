@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-04 00:32:14
+LastEditTime: 2023-07-04 01:03:34
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -35,6 +35,7 @@ class _Residual_Block(nn.Module):
 class Generator(nn.Module):
     def __init__(self, encoded_space_dim):
         super(Generator, self).__init__()
+        self.encoded_space_dim = encoded_space_dim
 
         self.resize = nn.Linear(encoded_space_dim, 3 * 40)
         self.unflatten = nn.Unflatten(dim=1, unflattened_size=(1, 3, 40))
@@ -82,16 +83,16 @@ class Generator(nn.Module):
         out = F.tanh(self.conv_output(out))
         return out
     
-    def calc_model_gradient(self, latent_vector):
-        jacobian = self.calc_model_gradient_FDM(latent_vector, delta=1e-2)
+    def calc_model_gradient(self, latent_vector, device):
+        jacobian = self.calc_model_gradient_FDM(latent_vector, device, delta=1e-2)
         return jacobian
 
-    def calc_model_gradient_FDM(self, latent_vector, delta=1e-4):
-        sample_latents = np.repeat(latent_vector.reshape(1, -1), repeats=self.encoded_space_dim + 1, axis=0)
+    def calc_model_gradient_FDM(self, latent_vector, device, delta=1e-4):
+        sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.encoded_space_dim + 1, axis=0)
         sample_latents[1:] += np.identity(self.encoded_space_dim) * delta
 
-        sample_datas = self.forward(sample_latents)
-        sample_datas = sample_datas.reshape(-1, 12*100)
+        sample_datas = self.forward(sample_latents.to(device))
+        sample_datas = sample_datas.reshape(-1, 12*160)
 
         jacobian = (sample_datas[1:] - sample_datas[0]).T / delta
         return jacobian

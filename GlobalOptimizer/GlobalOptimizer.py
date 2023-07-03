@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-20 21:02:34
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-22 23:27:24
+LastEditTime: 2023-07-04 01:06:21
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import numpy as np
@@ -42,7 +42,7 @@ class GlobalOptimizer():
 
         xs = np.zeros((sample_n, self.m))
         for i in range(batch_n):
-            xs[i * batch_size:(i + 1) * batch_size] = self.f(zs[i * batch_size:(i + 1) * batch_size]).detach()
+            xs[i * batch_size:(i + 1) * batch_size] = self.f(zs[i * batch_size:(i + 1) * batch_size]).cpu().detach()
         if remainder != 0:
             xs[batch_n * batch_size:] = self.f(zs[batch_n * batch_size:]).detach()
 
