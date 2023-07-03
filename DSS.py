@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-04 01:14:56
+LastEditTime: 2023-07-04 02:00:38
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -115,6 +115,14 @@ def main():
     best_score = optimizer.current_score
 
     iter_num = 20
+
+    imshape = (12, 160)
+    imdata = np.zeros(imshape)
+    # Enable interactive mode.
+    plt.ion()
+    # Create a figure and a set of subplots.
+    fig, ax = plt.subplots(2, 1, figsize=(5, 3)) 
+    # return AxesImage object for using.
     
     for i in range(iter_num):
         n_sample = 1000
@@ -122,16 +130,16 @@ def main():
         if opt_score < best_score:
             best_score = opt_score
 
+        fig.suptitle('Iter num = ' + str(i) + ', loss = ' + str(best_score), fontsize=16)
+        ax[0].imshow(target_spec.reshape(12, 160)) 
+        ax[0].set_title("Original") 
+        ax[1].imshow(opt_x.cpu().detach().numpy().reshape(12, 160)) 
+        ax[1].set_title("Generated")
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+
         print('Iteration #' + str(i) + ': ' + str(best_score))
         optimizer.update(opt_t)
-
-    fig, ax = plt.subplots(2, 1, figsize=(5, 3)) 
-    fig.suptitle('Iter num = ' + str(iter_num) + ', loss = ' + str(best_score), fontsize=16)
-    ax[0].imshow(target_spec.reshape(12, 160)) 
-    ax[0].set_title("Original") 
-    ax[1].imshow(opt_x.cpu().detach().numpy().reshape(12, 160)) 
-    ax[1].set_title("Generated")
-    plt.show()
 
 
 if __name__ == '__main__':
