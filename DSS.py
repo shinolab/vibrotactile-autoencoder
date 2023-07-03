@@ -2,15 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-24 02:36:54
+LastEditTime: 2023-07-04 00:32:44
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 import pySequentialLineSearch
 from GlobalOptimizer import JacobianOptimizer
-from model import Autoencoder
-from model import VAE
-from model import GAN
+from SRResNet_ACGAN import model
 import torch
 import pickle
 import numpy as np
@@ -24,7 +22,7 @@ from torchvision import transforms
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 128
+FEAT_DIM = 256
 
 def myFunc(decoder, denormalize, zs):
     zs = torch.tensor(zs).to(torch.float32).to(device)
@@ -64,26 +62,11 @@ def getRandomAMatrix(high_dim, dim, optimals, range):
         return None
 
 def main():
-    model = input('Choose generation model:' + '\n' + \
-          '[1]Autoencoder' + '\n'\
-          '[2]Variational Autoencoder' + '\n'\
-          '[3]Generative Adversarial Network' + '\n')
-    
-    if model == '1':
-        model_name = 'Autoencoder'
-        decoder = Autoencoder.Decoder(encoded_space_dim = FEAT_DIM)
-    if model == '2':
-        model_name = 'VAE'
-        decoder = VAE.Decoder(encoded_space_dim = FEAT_DIM)
-    if model == '3':
-        model_name = 'GAN'
-        decoder = GAN.Generator(encoded_space_dim = FEAT_DIM)
+    model_name = 'SRResNet_ACGAN'
+    decoder = model.Generator(encoded_space_dim = FEAT_DIM)
 
     # Model initialization and parameter loading
-    if model_name != 'GAN':
-        decoder_dict = torch.load('model/' + model_name + '/decoder_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
-    else:
-        decoder_dict = torch.load('model/' + model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
+    decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
     decoder_dict = {k: v for k, v in decoder_dict.items()}
     decoder.load_state_dict(decoder_dict)
 

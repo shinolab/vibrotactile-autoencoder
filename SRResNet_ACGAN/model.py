@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-28 03:49:38
+LastEditTime: 2023-07-04 00:32:14
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -10,6 +10,7 @@ import math
 import torch
 import torchvision
 import torch.nn.functional as F
+import numpy as np
 from torch import nn
 
 
@@ -80,6 +81,20 @@ class Generator(nn.Module):
         out = self.upscale4x(out)
         out = F.tanh(self.conv_output(out))
         return out
+    
+    def calc_model_gradient(self, latent_vector):
+        jacobian = self.calc_model_gradient_FDM(latent_vector, delta=1e-2)
+        return jacobian
+
+    def calc_model_gradient_FDM(self, latent_vector, delta=1e-4):
+        sample_latents = np.repeat(latent_vector.reshape(1, -1), repeats=self.encoded_space_dim + 1, axis=0)
+        sample_latents[1:] += np.identity(self.encoded_space_dim) * delta
+
+        sample_datas = self.forward(sample_latents)
+        sample_datas = sample_datas.reshape(-1, 12*100)
+
+        jacobian = (sample_datas[1:] - sample_datas[0]).T / delta
+        return jacobian
 
 
 class SpectrogramDiscriminator(nn.Module):
