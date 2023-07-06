@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-04 02:00:38
+LastEditTime: 2023-07-06 17:39:50
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -22,7 +22,7 @@ from torchvision import transforms
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 256
+FEAT_DIM = 128
 
 def denormalize(img):
     # Min of original data: -80
@@ -82,8 +82,13 @@ def main():
     decoder.eval()
     decoder.to(device)
 
-    with open('sample_target_spec_1.pickle', 'rb') as file:
-        target_spec = pickle.load(file)
+    # with open('sample_target_spec_1.pickle', 'rb') as file:
+    #     target_spec = pickle.load(file)
+
+    with open('trainset_LMT_large.pickle', 'rb') as file:
+        trainset = pickle.load(file)
+    
+    target_spec = trainset['spectrogram'][np.random.randint(len(trainset['spectrogram']))]
 
     target_data = torch.unsqueeze(torch.tensor(target_spec), 0).to(torch.float32).to(device)
 
@@ -98,7 +103,11 @@ def main():
             break
     # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
     
-    init_z = np.random.uniform(low=-1, high=1, size=(FEAT_DIM))
+    # initialize the conditional part
+    init_z_class = np.random.uniform(low=0, high=1, size=(108))
+    # init_z_class = np.zeros(108)
+    init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM - 108))
+    init_z = np.append(init_z_class, init_z_noise)
     init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
     init_z = np.matmul(random_A, init_low_z)
 
@@ -127,6 +136,7 @@ def main():
     for i in range(iter_num):
         n_sample = 1000
         opt_z, opt_x, opt_score, opt_t = optimizer.find_optimal(n_sample, batch_size=n_sample)
+        # print(opt_z)
         if opt_score < best_score:
             best_score = opt_score
 
@@ -140,6 +150,9 @@ def main():
 
         print('Iteration #' + str(i) + ': ' + str(best_score))
         optimizer.update(opt_t)
+
+    plt.ioff()
+    plt.show() 
 
 
 if __name__ == '__main__':
