@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-10 12:19:18
+LastEditTime: 2023-07-11 17:00:53
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -154,13 +154,13 @@ def main():
     plt.ioff()
     plt.show() 
 
-    # file = open('Generated_10.pickle', 'wb')
-    # pickle.dump(opt_t, file)
-    # file.close()
+    file = open('Generated_10.pickle', 'wb')
+    pickle.dump(opt_x.cpu().detach().numpy().reshape(12, 160), file)
+    file.close()
 
-    # file = open('Original_10.pickle', 'wb')
-    # pickle.dump(target_spec, file)
-    # file.close()
+    file = open('Original_10.pickle', 'wb')
+    pickle.dump(target_spec.reshape(12, 160), file)
+    file.close()
 
 
 if __name__ == '__main__':
