@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-11 17:00:53
+LastEditTime: 2023-07-24 17:06:58
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -88,7 +88,9 @@ def main():
     with open('trainset_LMT_large.pickle', 'rb') as file:
         trainset = pickle.load(file)
     
-    target_spec = trainset['spectrogram'][np.random.randint(len(trainset['spectrogram']))]
+    index = np.random.randint(len(trainset['spectrogram']))
+    target_spec = trainset['spectrogram'][index]
+    soundfile = trainset['filename'][index]
 
     target_data = torch.unsqueeze(torch.tensor(target_spec), 0).to(torch.float32).to(device)
 
@@ -154,12 +156,13 @@ def main():
     plt.ioff()
     plt.show() 
 
-    file = open('Generated_10.pickle', 'wb')
-    pickle.dump(opt_x.cpu().detach().numpy().reshape(12, 160), file)
-    file.close()
-
-    file = open('Original_10.pickle', 'wb')
-    pickle.dump(target_spec.reshape(12, 160), file)
+    result_dict = {'original': [target_spec.reshape(12, 160)], 
+                   'generated': [opt_x.cpu().detach().numpy().reshape(12, 160)], 
+                   'soundfile': [soundfile]
+                   }
+    
+    file = open('Result.pickle', 'wb')
+    pickle.dump(result_dict, file)
     file.close()
 
 
