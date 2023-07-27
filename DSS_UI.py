@@ -2,14 +2,14 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-27 21:45:14
+LastEditTime: 2023-07-27 21:45:53
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
 import numpy as np
 import pySequentialLineSearch
 from GlobalOptimizer import JacobianOptimizer
-from SRResNet_ACGAN import model
+from SRResNet_ACGAN_LMT108 import model
 import torch
 import pickle
 import sys

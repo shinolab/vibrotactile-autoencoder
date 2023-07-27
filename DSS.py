@@ -8,7 +8,7 @@ Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved.
 
 import pySequentialLineSearch
 from GlobalOptimizer import JacobianOptimizer
-from SRResNet_ACGAN import model
+from SRResNet_ACGAN_LMT108 import model
 import torch
 import pickle
 import numpy as np
