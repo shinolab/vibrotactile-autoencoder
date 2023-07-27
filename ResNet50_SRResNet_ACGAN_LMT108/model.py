@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-28 03:49:38
+LastEditTime: 2023-07-27 23:05:59
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -39,18 +39,19 @@ class LatentDiscriminator(nn.Module):
         super(LatentDiscriminator, self).__init__()
 
         self.flatten = nn.Flatten(start_dim=1)
+        self.resize = nn.Linear(encoded_space_dim, 16 * 8)
         self.unflatten = nn.Unflatten(dim=1, unflattened_size=(1, 16, 8))
 
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv3 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1, bias=False)
-        self.fc1 = nn.Linear(encoded_space_dim * 512, 512)
+        self.fc1 = nn.Linear(128 * 512, 512)
         self.fc2 = nn.Linear(512, 256)
         self.fc_d = nn.Linear(256, 1)
         self.fc_c = nn.Linear(256, 108)
 
     def forward(self, x):
-        x = self.unflatten(x)
+        x = self.unflatten(self.resize(x))
         x = F.leaky_relu(self.conv1(x), 0.2)
         x = F.leaky_relu(self.conv2(x), 0.2)
         x = F.leaky_relu(self.conv3(x), 0.2)
@@ -58,13 +59,12 @@ class LatentDiscriminator(nn.Module):
 
         x = F.leaky_relu(self.fc1(x), 0.2)
         x = F.leaky_relu(self.fc2(x), 0.2)
-        x = F.sigmoid(self.fc3(x))
 
         out_d = self.fc_d(x)
         out_d = F.sigmoid(out_d)
 
         out_c = self.fc_c(x)
-        out_c = F.softmax(out_c)
+        out_c = F.softmax(out_c, dim=1)
         return out_d, out_c
 
 
@@ -180,7 +180,7 @@ class SpectrogramDiscriminator(nn.Module):
         self.fc_d = nn.Linear(1024, 1)
         self.fc_c = nn.Linear(1024, 108)
         self.sigmoid = nn.Sigmoid()
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=1)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

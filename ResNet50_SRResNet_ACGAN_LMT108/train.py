@@ -146,7 +146,7 @@ for epoch in range(1, epoch_num + 1):
         # 2) latent discriminator
         for i in range(5):
             optimizer_D_latent.zero_grad()
-            real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
+            real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM - CLASS_NUM)))).to(device)
             fake_z = encoder(img)
 
             # loss for real distribution
@@ -176,8 +176,16 @@ for epoch in range(1, epoch_num + 1):
 
     toc = time.time()
 
-    writer.add_image('Real Spectrogram', img[0], epoch)
-    writer.add_image('Fake Spectrogram', gen_img[0], epoch)
+    writer.add_image('Real Spectrogram 1', img[0], epoch)
+    writer.add_image('Real Spectrogram 2', img[1], epoch)
+    writer.add_image('Real Spectrogram 3', img[2], epoch)
+    writer.add_image('Real Spectrogram 4', img[3], epoch)
+    writer.add_image('Real Spectrogram 5', img[4], epoch)
+    writer.add_image('Fake Spectrogram 1', gen_img[0], epoch)
+    writer.add_image('Fake Spectrogram 2', gen_img[1], epoch)
+    writer.add_image('Fake Spectrogram 3', gen_img[2], epoch)
+    writer.add_image('Fake Spectrogram 4', gen_img[3], epoch)
+    writer.add_image('Fake Spectrogram 5', gen_img[4], epoch)
 
     print('=====================================================================')
     print('Epoch: ', epoch, '\tAccumulated time: ', round((toc - tic) / 3600, 4), ' hours')
