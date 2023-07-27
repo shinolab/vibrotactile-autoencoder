@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-24 17:06:58
+LastEditTime: 2023-07-27 21:47:37
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -23,6 +23,7 @@ device = torch.device("cpu")
 print(f'Selected device: {device}')
 
 FEAT_DIM = 128
+CLASS_NUM = 108
 
 def denormalize(img):
     # Min of original data: -80
@@ -106,9 +107,9 @@ def main():
     # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
     
     # initialize the conditional part
-    init_z_class = np.random.uniform(low=0, high=1, size=(108))
-    # init_z_class = np.zeros(108)
-    init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM - 108))
+    init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
+    # init_z_class = np.zeros(CLASS_NUM)
+    init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM - CLASS_NUM))
     init_z = np.append(init_z_class, init_z_noise)
     init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
     init_z = np.matmul(random_A, init_low_z)
