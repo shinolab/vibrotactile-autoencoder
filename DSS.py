@@ -79,7 +79,7 @@ def main():
     decoder_dict = {k: v for k, v in decoder_dict.items()}
     decoder.load_state_dict(decoder_dict)
 
-    decoder.eval()
+    decoder.eval() 
     decoder.to(device)
 
     # with open('sample_target_spec_1.pickle', 'rb') as file:
