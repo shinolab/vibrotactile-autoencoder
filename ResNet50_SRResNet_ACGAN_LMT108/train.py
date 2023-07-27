@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-01 13:42:28
+LastEditTime: 2023-07-27 22:19:27
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -33,7 +33,9 @@ with open(file_path, 'rb') as file:
 spectrogram = torch.from_numpy(trainset['spectrogram'].astype(np.float32))
 texture = trainset['texture']
 le = preprocessing.LabelEncoder()
-labels = torch.as_tensor(le.fit_transform(texture))
+onehot = preprocessing.OneHotEncoder()
+labels = le.fit_transform(texture)
+labels = torch.as_tensor(onehot.fit_transform(labels.reshape(-1, 1)).toarray())
 
 # transform to [-1, 1]
 def Normalization(X):
@@ -56,10 +58,11 @@ train_dataloader = torch.utils.data.DataLoader(
 adversarial_loss = nn.BCELoss()
 auxiliary_loss = nn.CrossEntropyLoss()
 
-FEAT_DIM = 128
-encoder = model.ResNetEncoder(encoded_space_dim = FEAT_DIM)
+FEAT_DIM = 256
+CLASS_NUM = 108
+encoder = model.ResNetEncoder(encoded_space_dim = FEAT_DIM - CLASS_NUM)
 generator= model.Generator(encoded_space_dim = FEAT_DIM)
-dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
+dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM - CLASS_NUM)
 dis_spec = model.SpectrogramDiscriminator()
 
 gen_lr = 1e-4
@@ -96,7 +99,7 @@ for epoch in range(1, epoch_num + 1):
         img = img.to(device)
         label = label.to(device)
 
-        soft_scale = 0.1
+        soft_scale = 0.3
         valid = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(1.0), requires_grad=False).to(device)
         soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
         fake = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(0.0), requires_grad=False).to(device)
@@ -108,6 +111,7 @@ for epoch in range(1, epoch_num + 1):
             optimizer_G.zero_grad()
             # input latent vector
             z = encoder(img)
+            z = torch.cat((z, label), dim=1).to(torch.float32)
             # train generator
             gen_img = generator(z)
             output_d, output_c = dis_spec(gen_img)
@@ -121,6 +125,7 @@ for epoch in range(1, epoch_num + 1):
         # 1.2) spectrogram discriminator
         optimizer_D_spec.zero_grad()
         z = encoder(img)
+        z = torch.cat((z, label), dim=1).to(torch.float32)
         gen_img = generator(z)
         
         # loss for real img

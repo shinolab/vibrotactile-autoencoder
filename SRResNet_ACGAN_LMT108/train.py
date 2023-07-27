@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-01 13:42:28
+LastEditTime: 2023-07-27 22:09:41
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -73,7 +73,7 @@ train_dataloader = torch.utils.data.DataLoader(
 adversarial_loss = nn.BCELoss()
 auxiliary_loss = nn.CrossEntropyLoss()
 
-FEAT_DIM = 256
+FEAT_DIM = 128
 CLASS_NUM = 108
 
 generator= model.Generator(encoded_space_dim = FEAT_DIM)

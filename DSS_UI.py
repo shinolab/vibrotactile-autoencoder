@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-27 21:47:34
+LastEditTime: 2023-07-27 22:21:10
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -116,7 +116,7 @@ class HeatmapWindow(QMainWindow):
         init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
         # init_z_class = np.zeros(CLASS_NUM)
         init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM - CLASS_NUM))
-        init_z = np.append(init_z_class, init_z_noise)
+        init_z = np.append(init_z_noise, init_z_class)
         init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
         init_z = np.matmul(random_A, init_low_z)
 

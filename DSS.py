@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-27 21:47:37
+LastEditTime: 2023-07-27 22:29:37
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -110,7 +110,7 @@ def main():
     init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
     # init_z_class = np.zeros(CLASS_NUM)
     init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM - CLASS_NUM))
-    init_z = np.append(init_z_class, init_z_noise)
+    init_z = np.append(init_z_noise, init_z_class)
     init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
     init_z = np.matmul(random_A, init_low_z)
 
