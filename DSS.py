@@ -71,7 +71,7 @@ def getRandomAMatrix(high_dim, dim, optimals, range):
         return None
 
 def main():
-    model_name = 'SRResNet_ACGAN'
+    model_name = 'SRResNet_ACGAN_LMT108'
     decoder = model.Generator(encoded_space_dim = FEAT_DIM)
 
     # Model initialization and parameter loading
