@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-27 22:29:37
+LastEditTime: 2023-07-29 15:15:57
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -22,7 +22,7 @@ from torchvision import transforms
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 128
+FEAT_DIM = 256
 CLASS_NUM = 108
 
 def denormalize(img):
@@ -72,7 +72,7 @@ def getRandomAMatrix(high_dim, dim, optimals, range):
         return None
 
 def main():
-    model_name = 'SRResNet_ACGAN_LMT108'
+    model_name = 'ResNet50_SRResNet_ACGAN_LMT108'
     decoder = model.Generator(encoded_space_dim = FEAT_DIM)
 
     # Model initialization and parameter loading
