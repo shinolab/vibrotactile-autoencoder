@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-29 15:15:57
+LastEditTime: 2023-09-01 00:40:52
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -22,8 +22,8 @@ from torchvision import transforms
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 256
-CLASS_NUM = 108
+FEAT_DIM = 128
+CLASS_NUM = 7
 
 def denormalize(img):
     # Min of original data: -80
@@ -72,7 +72,7 @@ def getRandomAMatrix(high_dim, dim, optimals, range):
         return None
 
 def main():
-    model_name = 'ResNet50_SRResNet_ACGAN_LMT108'
+    model_name = 'SRResNet_ACGAN_7-class'
     decoder = model.Generator(encoded_space_dim = FEAT_DIM)
 
     # Model initialization and parameter loading
@@ -86,7 +86,7 @@ def main():
     # with open('sample_target_spec_1.pickle', 'rb') as file:
     #     target_spec = pickle.load(file)
 
-    with open('trainset_LMT_large.pickle', 'rb') as file:
+    with open('trainset_7-class.pickle', 'rb') as file:
         trainset = pickle.load(file)
     
     index = np.random.randint(len(trainset['spectrogram']))
