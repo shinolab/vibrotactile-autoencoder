@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-24 17:39:49
+LastEditTime: 2023-08-31 15:58:08
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -40,7 +40,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 print(f'Selected device: {device}')
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(current_dir, '..', 'trainset.pickle')
+file_path = os.path.join(current_dir, '..', 'trainset_7-class.pickle')
 with open(file_path, 'rb') as file:
 # with open('trainset.pickle', 'rb') as file:
     trainset = pickle.load(file)
@@ -74,7 +74,7 @@ adversarial_loss = nn.BCELoss()
 auxiliary_loss = nn.CrossEntropyLoss()
 
 FEAT_DIM = 128
-CLASS_NUM = 108
+CLASS_NUM = 7
 
 generator= model.Generator(encoded_space_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator()

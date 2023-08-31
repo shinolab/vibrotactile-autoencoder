@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-24 17:39:54
+LastEditTime: 2023-08-31 16:02:12
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -141,7 +141,7 @@ class SpectrogramDiscriminator(nn.Module):
         self.fc_d = nn.Linear(1024, 1)
         self.fc_c = nn.Linear(1024, 7)
         self.sigmoid = nn.Sigmoid()
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=1)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
