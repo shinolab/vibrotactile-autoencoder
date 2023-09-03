@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-01 00:40:52
+LastEditTime: 2023-09-03 14:59:08
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -23,7 +23,7 @@ device = torch.device("cpu")
 print(f'Selected device: {device}')
 
 FEAT_DIM = 128
-CLASS_NUM = 7
+CLASS_NUM = 108
 
 def denormalize(img):
     # Min of original data: -80
@@ -73,7 +73,13 @@ def getRandomAMatrix(high_dim, dim, optimals, range):
 
 def main():
     model_name = 'SRResNet_ACGAN_7-class'
+    # model_name = 'ResNet50_SRResNet_ACGAN_LMT108'
     decoder = model.Generator(encoded_space_dim = FEAT_DIM)
+
+    result_dict = {'original': [], 
+                  'generated': [], 
+                  'soundfile': []
+                }
 
     # Model initialization and parameter loading
     decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
@@ -88,81 +94,87 @@ def main():
 
     with open('trainset_7-class.pickle', 'rb') as file:
         trainset = pickle.load(file)
+
+    # 10 times repeat generation experiments
+    for repeat_times in range(10):
+        index = np.random.randint(len(trainset['spectrogram']))
+        target_spec = trainset['spectrogram'][index]
+        soundfile = trainset['filename'][index]
+
+        target_data = torch.unsqueeze(torch.tensor(target_spec), 0).to(torch.float32).to(device)
+
+        slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
+        target_latent = np.random.uniform(-1, 1, FEAT_DIM)
+        target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
+        # target_data = decoder(target_latent.reshape(1, -1))[0]
+
+        while True:
+            random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
+            if random_A is not None:
+                break
+        # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
+        
+        # initialize the conditional part
+        init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
+        # init_z_class = np.zeros(CLASS_NUM)
+        init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM - CLASS_NUM))
+        init_z = np.append(init_z_noise, init_z_class)
+        init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
+        init_z = np.matmul(random_A, init_low_z)
+
+        print(slider_length)
+
+        optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*160, 
+                        lambda zs: myFunc(decoder, zs), 
+                        lambda xs: myGoodness(target_data, xs), 
+                        slider_length, 
+                        lambda z: myJacobian(decoder, z), 
+                        maximizer=False)
+
+        optimizer.init(init_z)
+        best_score = optimizer.current_score
+
+        iter_num = 20
+
+        imshape = (12, 160)
+        imdata = np.zeros(imshape)
+        # Enable interactive mode.
+        # plt.ion()
+        # Create a figure and a set of subplots.
+        # fig, ax = plt.subplots(2, 1, figsize=(5, 3)) 
+        # return AxesImage object for using.
+        
+        for i in range(iter_num):
+            n_sample = 1000
+            opt_z, opt_x, opt_score, opt_t = optimizer.find_optimal(n_sample, batch_size=n_sample)
+            # print(opt_z)
+            if opt_score < best_score:
+                best_score = opt_score
+
+            # fig.suptitle('Iter num = ' + str(i) + ', loss = ' + str(best_score), fontsize=16)
+            # ax[0].imshow(target_spec.reshape(12, 160)) 
+            # ax[0].set_title("Original") 
+            # ax[1].imshow(opt_x.cpu().detach().numpy().reshape(12, 160)) 
+            # ax[1].set_title("Generated")
+            # fig.canvas.draw()
+            # fig.canvas.flush_events()
+
+            print('Iteration #' + str(i) + ': ' + str(best_score))
+            optimizer.update(opt_t)
+
+        # plt.ioff()
+        # plt.show() 
+
+        # result_dict = {'original': [target_spec.reshape(12, 160)], 
+        #                'generated': [opt_x.cpu().detach().numpy().reshape(12, 160)], 
+        #                'soundfile': [soundfile]
+        #                }
+        
+        result_dict['original'].append(target_spec.reshape(12, 160))
+        result_dict['generated'].append(opt_x.cpu().detach().numpy().reshape(12, 160))
+        result_dict['soundfile'].append(soundfile)
     
-    index = np.random.randint(len(trainset['spectrogram']))
-    target_spec = trainset['spectrogram'][index]
-    soundfile = trainset['filename'][index]
-
-    target_data = torch.unsqueeze(torch.tensor(target_spec), 0).to(torch.float32).to(device)
-
-    slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
-    target_latent = np.random.uniform(-1, 1, FEAT_DIM)
-    target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
-    # target_data = decoder(target_latent.reshape(1, -1))[0]
-
-    while True:
-        random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
-        if random_A is not None:
-            break
-    # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
-    
-    # initialize the conditional part
-    init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
-    # init_z_class = np.zeros(CLASS_NUM)
-    init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM - CLASS_NUM))
-    init_z = np.append(init_z_noise, init_z_class)
-    init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
-    init_z = np.matmul(random_A, init_low_z)
-
-    print(slider_length)
-
-    optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*160, 
-                      lambda zs: myFunc(decoder, zs), 
-                      lambda xs: myGoodness(target_data, xs), 
-                      slider_length, 
-                      lambda z: myJacobian(decoder, z), 
-                      maximizer=False)
-
-    optimizer.init(init_z)
-    best_score = optimizer.current_score
-
-    iter_num = 20
-
-    imshape = (12, 160)
-    imdata = np.zeros(imshape)
-    # Enable interactive mode.
-    plt.ion()
-    # Create a figure and a set of subplots.
-    fig, ax = plt.subplots(2, 1, figsize=(5, 3)) 
-    # return AxesImage object for using.
-    
-    for i in range(iter_num):
-        n_sample = 1000
-        opt_z, opt_x, opt_score, opt_t = optimizer.find_optimal(n_sample, batch_size=n_sample)
-        # print(opt_z)
-        if opt_score < best_score:
-            best_score = opt_score
-
-        fig.suptitle('Iter num = ' + str(i) + ', loss = ' + str(best_score), fontsize=16)
-        ax[0].imshow(target_spec.reshape(12, 160)) 
-        ax[0].set_title("Original") 
-        ax[1].imshow(opt_x.cpu().detach().numpy().reshape(12, 160)) 
-        ax[1].set_title("Generated")
-        fig.canvas.draw()
-        fig.canvas.flush_events()
-
-        print('Iteration #' + str(i) + ': ' + str(best_score))
-        optimizer.update(opt_t)
-
-    plt.ioff()
-    plt.show() 
-
-    result_dict = {'original': [target_spec.reshape(12, 160)], 
-                   'generated': [opt_x.cpu().detach().numpy().reshape(12, 160)], 
-                   'soundfile': [soundfile]
-                   }
-    
-    file = open('Result.pickle', 'wb')
+    file = open('DSS_results/' + model_name + '/' + str(FEAT_DIM) + 'd_result.pickle', 'wb')
     pickle.dump(result_dict, file)
     file.close()
 
