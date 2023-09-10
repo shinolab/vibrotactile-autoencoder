@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-08-01 13:43:00
+LastEditTime: 2023-09-10 16:18:47
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -24,8 +24,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 256
-CLASS_NUM = 108
+FEAT_DIM = 128
+CLASS_NUM = 7
 
 def denormalize(img):
     # Min of original data: -80
@@ -81,7 +81,7 @@ class HeatmapWindow(QMainWindow):
         self.setWindowTitle("Heatmap with Slider")
         self.setGeometry(100, 100, 700, 200)
 
-        model_name = 'ResNet50_SRResNet_ACGAN_LMT108'
+        model_name = 'ResNet50_SRResNet_ACGAN_7-class'
         self.decoder = model.Generator(encoded_space_dim = FEAT_DIM)
 
         # Model initialization and parameter loading
