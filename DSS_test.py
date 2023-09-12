@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-10 16:15:18
+LastEditTime: 2023-09-12 11:02:56
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -72,7 +72,7 @@ def getRandomAMatrix(high_dim, dim, optimals, range):
         return None
 
 def main():
-    model_name = 'SRResNet_ACGAN_LMT108'
+    model_name = 'ResNet50_SRResNet_ACGAN_LMT108'
     # model_name = 'ResNet50_SRResNet_ACGAN_7-class'
     decoder = model.Generator(encoded_space_dim = FEAT_DIM)
 
