@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-02 14:51:25
+LastEditTime: 2023-09-27 01:38:13
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -150,11 +150,11 @@ for epoch in range(1, epoch_num + 1):
             fake_z = encoder(img)
 
             # loss for real distribution
-            output_d, output_c = dis_latent(real_z)
-            real_loss = (adversarial_loss(output_d, soft_valid) + auxiliary_loss(output_c, label)) / 2
+            output_d = dis_latent(real_z)
+            real_loss = adversarial_loss(output_d, soft_valid)
             # loss for fake distribution
-            output_d, output_c = dis_latent(fake_z.detach())
-            fake_loss = (adversarial_loss(output_d, soft_fake) + auxiliary_loss(output_c, label)) / 2
+            output_d = dis_latent(fake_z.detach())
+            fake_loss = adversarial_loss(output_d, soft_fake)
 
             d_latent_loss = (real_loss + fake_loss) / 2
             d_latent_loss.backward()

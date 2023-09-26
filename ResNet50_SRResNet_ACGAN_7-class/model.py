@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-02 15:04:54
+LastEditTime: 2023-09-27 01:38:28
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -48,7 +48,6 @@ class LatentDiscriminator(nn.Module):
         self.fc1 = nn.Linear(128 * 512, 512)
         self.fc2 = nn.Linear(512, 256)
         self.fc_d = nn.Linear(256, 1)
-        self.fc_c = nn.Linear(256, 7)
 
     def forward(self, x):
         x = self.unflatten(self.resize(x))
@@ -62,10 +61,7 @@ class LatentDiscriminator(nn.Module):
 
         out_d = self.fc_d(x)
         out_d = F.sigmoid(out_d)
-
-        out_c = self.fc_c(x)
-        out_c = F.softmax(out_c, dim=1)
-        return out_d, out_c
+        return out_d
 
 
 class _Residual_Block(nn.Module):
