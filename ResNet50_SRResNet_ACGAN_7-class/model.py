@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-27 01:38:28
+LastEditTime: 2023-10-07 20:45:17
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -18,7 +18,7 @@ class ResNetEncoder(nn.Module):
         super(ResNetEncoder, self).__init__()
 
         self.flatten = nn.Flatten(start_dim=1)
-        self.resize_input = nn.Linear(12 * 160, 3 * 128 * 128)
+        self.resize_input = nn.Linear(48 * 320, 3 * 128 * 128)
         self.unflatten = nn.Unflatten(dim=1, unflattened_size=(3, 128, 128))
 
         self.res50 = torchvision.models.resnet50(weights="IMAGENET1K_V2")
@@ -86,7 +86,7 @@ class Generator(nn.Module):
     def __init__(self, encoded_space_dim):
         super(Generator, self).__init__()
 
-        self.resize = nn.Linear(encoded_space_dim, 3 * 40)
+        self.resize = nn.Linear(encoded_space_dim, 12 * 80)
         self.unflatten = nn.Unflatten(dim=1, unflattened_size=(1, 3, 40))
 
         self.conv_input = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=9, stride=1, padding=4, bias=False)
@@ -172,7 +172,7 @@ class SpectrogramDiscriminator(nn.Module):
         )
 
         self.LeakyReLU = nn.LeakyReLU(0.2, inplace=True)
-        self.fc1 = nn.Linear(512 * 2 * 11, 1024)
+        self.fc1 = nn.Linear(512 * 4 * 21, 1024)
         self.fc_d = nn.Linear(1024, 1)
         self.fc_c = nn.Linear(1024, 7)
         self.sigmoid = nn.Sigmoid()

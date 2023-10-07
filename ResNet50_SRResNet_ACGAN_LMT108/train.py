@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-27 01:37:35
+LastEditTime: 2023-10-07 20:47:37
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -166,9 +166,9 @@ for epoch in range(1, epoch_num + 1):
         optimizer_E.zero_grad()
         fake_z = encoder(img)
 
-        output_d, output_c = dis_latent(fake_z)
+        output_d = dis_latent(fake_z)
 
-        E_loss = (adversarial_loss(output_d, valid) + auxiliary_loss(output_c, label)) / 2
+        E_loss = adversarial_loss(output_d, valid)
         E_loss.backward()
         optimizer_E.step()
 
