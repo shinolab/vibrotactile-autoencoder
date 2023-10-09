@@ -9,7 +9,7 @@ import sys
 import numpy as np
 import pySequentialLineSearch
 from GlobalOptimizer import JacobianOptimizer
-from SRResNet_ACGAN_LMT108 import model
+from ResNet50_SRResNet_ACGAN_LMT108 import model
 import torch
 import pickle
 import sys
@@ -24,7 +24,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 512
+FEAT_DIM = 256
 CLASS_NUM = 108
 
 def denormalize(img):
@@ -120,7 +120,7 @@ class HeatmapWindow(QMainWindow):
         init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
         init_z = np.matmul(random_A, init_low_z)
 
-        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*160, 
+        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
                       lambda zs: myFunc(self.decoder, zs), 
                       lambda xs: myGoodness(target_data, xs), 
                       slider_length, 
@@ -185,7 +185,7 @@ class HeatmapWindow(QMainWindow):
 
         # 绘制热度图
         self.ax_fake.clear()
-        self.ax_fake.imshow(x.cpu().detach().numpy().reshape(12, 160), cmap='viridis')
+        self.ax_fake.imshow(x.cpu().detach().numpy().reshape(48, 320), cmap='viridis')
         self.canvas_fake.draw()
 
 

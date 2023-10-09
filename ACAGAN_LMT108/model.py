@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-07 20:45:01
+LastEditTime: 2023-10-09 14:16:15
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -85,9 +85,10 @@ class _Residual_Block(nn.Module):
 class Generator(nn.Module):
     def __init__(self, encoded_space_dim):
         super(Generator, self).__init__()
+        self.encoded_space_dim = encoded_space_dim
 
         self.resize = nn.Linear(encoded_space_dim, 12 * 80)
-        self.unflatten = nn.Unflatten(dim=1, unflattened_size=(1, 3, 40))
+        self.unflatten = nn.Unflatten(dim=1, unflattened_size=(1, 12, 80))
 
         self.conv_input = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=9, stride=1, padding=4, bias=False)
         self.relu = nn.LeakyReLU(0.2, inplace=True)
@@ -174,7 +175,7 @@ class SpectrogramDiscriminator(nn.Module):
         self.LeakyReLU = nn.LeakyReLU(0.2, inplace=True)
         self.fc1 = nn.Linear(512 * 4 * 21, 1024)
         self.fc_d = nn.Linear(1024, 1)
-        self.fc_c = nn.Linear(1024, 7)
+        self.fc_c = nn.Linear(1024, 108)
         self.sigmoid = nn.Sigmoid()
         self.softmax = nn.Softmax(dim=1)
 

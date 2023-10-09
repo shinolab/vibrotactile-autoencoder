@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-07 20:45:17
+LastEditTime: 2023-10-09 14:03:43
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -10,12 +10,14 @@ import math
 import torch
 import torchvision
 import torch.nn.functional as F
+import numpy as np
 from torch import nn
 
 
 class ResNetEncoder(nn.Module):
     def __init__(self, encoded_space_dim):
         super(ResNetEncoder, self).__init__()
+        self.encoded_space_dim = encoded_space_dim
 
         self.flatten = nn.Flatten(start_dim=1)
         self.resize_input = nn.Linear(48 * 320, 3 * 128 * 128)
@@ -131,6 +133,20 @@ class Generator(nn.Module):
         out = self.upscale4x(out)
         out = F.tanh(self.conv_output(out))
         return out
+
+    def calc_model_gradient(self, latent_vector, device):
+        jacobian = self.calc_model_gradient_FDM(latent_vector, device, delta=1e-2)
+        return jacobian
+
+    def calc_model_gradient_FDM(self, latent_vector, device, delta=1e-4):
+        sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.encoded_space_dim + 1, axis=0)
+        sample_latents[1:] += np.identity(self.encoded_space_dim) * delta
+
+        sample_datas = self.forward(sample_latents.to(device))
+        sample_datas = sample_datas.reshape(-1, 48*320)
+
+        jacobian = (sample_datas[1:] - sample_datas[0]).T / delta
+        return jacobian
 
 
 class SpectrogramDiscriminator(nn.Module):

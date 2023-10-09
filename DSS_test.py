@@ -2,13 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-12 11:02:56
+LastEditTime: 2023-10-09 14:09:13
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 import pySequentialLineSearch
 from GlobalOptimizer import JacobianOptimizer
-from SRResNet_ACGAN_LMT108 import model
+from ResNet50_SRResNet_ACGAN_LMT108 import model
 import torch
 import pickle
 import numpy as np
@@ -22,7 +22,7 @@ from torchvision import transforms
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 512
+FEAT_DIM = 256
 CLASS_NUM = 108
 
 def denormalize(img):
@@ -128,7 +128,7 @@ def main():
         init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
         init_z = np.matmul(random_A, init_low_z)
 
-        optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*160, 
+        optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
                         lambda zs: myFunc(decoder, zs), 
                         lambda xs: myGoodness(target_data, xs), 
                         slider_length, 
@@ -139,7 +139,7 @@ def main():
         best_score = optimizer.current_score
         avg_loss[0] += best_score
 
-        imshape = (12, 160)
+        imshape = (48, 320)
         imdata = np.zeros(imshape)
         
         for i in range(iter_num):

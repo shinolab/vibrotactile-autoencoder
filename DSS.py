@@ -2,13 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-09-04 14:23:19
+LastEditTime: 2023-10-09 13:38:11
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
 import pySequentialLineSearch
 from GlobalOptimizer import JacobianOptimizer
-from SRResNet_ACGAN_LMT108 import model
+from ResNet50_SRResNet_ACGAN_LMT108 import model
 import torch
 import pickle
 import numpy as np
@@ -124,7 +124,7 @@ def main():
 
         print(slider_length)
 
-        optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 12*160, 
+        optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
                         lambda zs: myFunc(decoder, zs), 
                         lambda xs: myGoodness(target_data, xs), 
                         slider_length, 
@@ -136,7 +136,7 @@ def main():
 
         iter_num = 20
 
-        imshape = (12, 160)
+        imshape = (48, 320)
         imdata = np.zeros(imshape)
         # Enable interactive mode.
         # plt.ion()
@@ -170,8 +170,8 @@ def main():
         #                'soundfile': [soundfile]
         #                }
         
-        result_dict['original'].append(target_spec.reshape(12, 160))
-        result_dict['generated'].append(opt_x.cpu().detach().numpy().reshape(12, 160))
+        result_dict['original'].append(target_spec.reshape(48, 320))
+        result_dict['generated'].append(opt_x.cpu().detach().numpy().reshape(48, 320))
         result_dict['soundfile'].append(soundfile)
     
     file = open('DSS_results/' + model_name + '/' + str(FEAT_DIM) + 'd_result.pickle', 'wb')
