@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:47:50
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-09 14:09:13
+LastEditTime: 2023-10-10 02:50:12
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -95,12 +95,11 @@ def main():
     with open('trainset_7-class.pickle', 'rb') as file:
         trainset = pickle.load(file)
 
-    test_index = [68, 2248, 2947, 3687, 3893, 4181, 5437, 10451, 11387, 11400, 
-                  13158, 14095, 15752, 17095, 24956, 24865, 25370, 27028, 27363, 28968]
+    test_index = [68, 2248, 2947, 3893, 4181, 5437, 10451, 11387, 13158, 14095]
     
     iter_num = 20
     
-    avg_loss = np.zeros(len(test_index)+1)
+    avg_loss = np.zeros(iter_num+1)
 
     # repeat generation experiments
     for index in test_index:
@@ -153,7 +152,7 @@ def main():
             avg_loss[i+1] += best_score
             optimizer.update(opt_t)
     
-    avg_loss /= iter_num
+    avg_loss /= len(test_index)
     for loss in avg_loss:
         print(loss)
 
