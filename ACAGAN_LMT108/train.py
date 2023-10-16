@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-16 13:08:44
+LastEditTime: 2023-10-16 20:03:08
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -115,7 +115,7 @@ for epoch in range(1, epoch_num + 1):
             gen_img = generator(z)
             output_d = dis_spec(gen_img)
 
-            g_loss = adversarial_loss(output_d, valid) + 50 * image_loss(gen_img, img)
+            g_loss = adversarial_loss(output_d, valid) + 25 * image_loss(gen_img, img)
             g_loss.backward()
             optimizer_G.step()
 
