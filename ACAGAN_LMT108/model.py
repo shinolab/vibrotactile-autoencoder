@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-09 16:49:33
+LastEditTime: 2023-10-14 12:46:04
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -175,9 +175,7 @@ class SpectrogramDiscriminator(nn.Module):
         self.LeakyReLU = nn.LeakyReLU(0.2, inplace=True)
         self.fc1 = nn.Linear(512 * 4 * 21, 1024)
         self.fc_d = nn.Linear(1024, 1)
-        self.fc_c = nn.Linear(1024, 108)
         self.sigmoid = nn.Sigmoid()
-        self.softmax = nn.Softmax(dim=1)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -195,6 +193,4 @@ class SpectrogramDiscriminator(nn.Module):
         out_d = self.fc_d(out)
         out_d = self.sigmoid(out_d)
 
-        out_c = self.fc_c(out)
-        out_c = self.softmax(out_c)
-        return out_d.view(-1, 1), out_c
+        return out_d.view(-1, 1)

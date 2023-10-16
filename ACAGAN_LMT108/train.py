@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-08 14:44:55
+LastEditTime: 2023-10-14 12:48:43
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -60,10 +60,9 @@ auxiliary_loss = nn.CrossEntropyLoss()
 image_loss = nn.MSELoss()
 
 FEAT_DIM = 256
-CLASS_NUM = 108
-encoder = model.ResNetEncoder(encoded_space_dim = FEAT_DIM - CLASS_NUM)
+encoder = model.ResNetEncoder(encoded_space_dim = FEAT_DIM)
 generator= model.Generator(encoded_space_dim = FEAT_DIM)
-dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM - CLASS_NUM)
+dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator()
 
 gen_lr = 1e-4
@@ -81,7 +80,7 @@ dis_latent.to(device)
 generator.to(device)
 dis_spec.to(device)
 
-epoch_num = 150
+epoch_num = 100
 
 writer = SummaryWriter()
 tic = time.time()
@@ -115,10 +114,9 @@ for epoch in range(1, epoch_num + 1):
             z = torch.cat((z, label), dim=1).to(torch.float32)
             # train generator
             gen_img = generator(z)
-            output_d, output_c = dis_spec(gen_img)
+            output_d = dis_spec(gen_img)
 
-            g_loss = (adversarial_loss(output_d, valid) + auxiliary_loss(output_c, label)) / 2 \
-                      + image_loss(gen_img, img)
+            g_loss = adversarial_loss(output_d, valid) + 50 * image_loss(gen_img, img)
             g_loss.backward()
             optimizer_G.step()
 
@@ -131,12 +129,12 @@ for epoch in range(1, epoch_num + 1):
         gen_img = generator(z)
         
         # loss for real img
-        output_d, output_c = dis_spec(img)
-        real_loss = (adversarial_loss(output_d, soft_valid) + auxiliary_loss(output_c, label)) / 2
+        output_d = dis_spec(img)
+        real_loss = adversarial_loss(output_d, soft_valid)
 
         # loss for fake img
-        output_d, output_c = dis_spec(gen_img.detach())
-        fake_loss = (adversarial_loss(output_d, soft_fake) + auxiliary_loss(output_c, label)) / 2
+        output_d = dis_spec(gen_img.detach())
+        fake_loss = adversarial_loss(output_d, soft_fake)
 
         d_spec_loss = (real_loss + fake_loss) / 2
 
@@ -148,7 +146,7 @@ for epoch in range(1, epoch_num + 1):
         # 2) latent discriminator
         for i in range(5):
             optimizer_D_latent.zero_grad()
-            real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM - CLASS_NUM)))).to(device)
+            real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
             fake_z = encoder(img)
 
             # loss for real distribution
