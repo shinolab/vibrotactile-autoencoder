@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-14 12:48:43
+LastEditTime: 2023-10-16 13:08:44
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -111,7 +111,6 @@ for epoch in range(1, epoch_num + 1):
             optimizer_G.zero_grad()
             # input latent vector
             z = encoder(img)
-            z = torch.cat((z, label), dim=1).to(torch.float32)
             # train generator
             gen_img = generator(z)
             output_d = dis_spec(gen_img)
@@ -125,7 +124,6 @@ for epoch in range(1, epoch_num + 1):
         # 1.2) spectrogram discriminator
         optimizer_D_spec.zero_grad()
         z = encoder(img)
-        z = torch.cat((z, label), dim=1).to(torch.float32)
         gen_img = generator(z)
         
         # loss for real img
