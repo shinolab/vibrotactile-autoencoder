@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-17 03:32:12
+LastEditTime: 2023-10-17 22:54:00
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -33,9 +33,7 @@ with open(file_path, 'rb') as file:
 spectrogram = torch.from_numpy(trainset['spectrogram'].astype(np.float32))
 texture = trainset['texture']
 le = preprocessing.LabelEncoder()
-onehot = preprocessing.OneHotEncoder()
-labels = le.fit_transform(texture)
-labels = torch.as_tensor(onehot.fit_transform(labels.reshape(-1, 1)).toarray())
+labels = torch.as_tensor(le.fit_transform(texture))
 
 # transform to [-1, 1]
 def Normalization(X):
@@ -56,19 +54,18 @@ train_dataloader = torch.utils.data.DataLoader(
     )
 
 adversarial_loss = nn.BCELoss()
-auxiliary_loss = nn.CrossEntropyLoss()
-image_loss = nn.MSELoss()
 
-FEAT_DIM = 256
-encoder = model.ResNetEncoder(encoded_space_dim = FEAT_DIM)
-generator= model.Generator(encoded_space_dim = FEAT_DIM)
-dis_latent = model.LatentDiscriminator(encoded_space_dim = FEAT_DIM)
-dis_spec = model.SpectrogramDiscriminator()
+FEAT_DIM = 512
+CLASS_NUM = 108
+encoder = model.ResNetEncoder(feat_dim = FEAT_DIM)
+generator= model.Generator(feat_dim = FEAT_DIM, class_dim = CLASS_NUM)
+dis_latent = model.LatentDiscriminator(feat_dim = FEAT_DIM)
+dis_spec = model.SpectrogramDiscriminator(class_dim = CLASS_NUM)
 
-gen_lr = 5e-5
-encoder_lr = 5e-5
-d_spec_lr = 5e-5
-d_latent_lr = 5e-5
+gen_lr = 1e-4
+encoder_lr = 1e-4
+d_spec_lr = 1e-4
+d_latent_lr = 1e-4
 
 optimizer_G = optim.Adam(generator.parameters(), lr=gen_lr)
 optimizer_E = optim.Adam(encoder.parameters(), lr=encoder_lr)
@@ -99,11 +96,9 @@ for epoch in range(1, epoch_num + 1):
         img = img.to(device)
         label = label.to(device)
 
-        soft_scale = 0.3
+        soft_scale = 0.2
         valid = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(1.0), requires_grad=False).to(device)
-        soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
         fake = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(0.0), requires_grad=False).to(device)
-        soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
 
         # 1) reconstruction
         # 1.1) generator
@@ -111,26 +106,31 @@ for epoch in range(1, epoch_num + 1):
         # input latent vector
         z = encoder(img)
         # train generator
-        gen_img = generator(z)
-        output_d = dis_spec(gen_img)
+        fake_label = torch.LongTensor(np.random.randint(0, CLASS_NUM, img.size(0))).to(device)
+        gen_img = generator(z, fake_label)
+        output_d = dis_spec(gen_img, fake_label)
 
-        g_loss = (adversarial_loss(output_d, valid) + image_loss(gen_img, img)) / 2
+        g_loss = adversarial_loss(output_d, valid)
         g_loss.backward()
         optimizer_G.step()
 
         writer.add_scalar('Spectrogram/G_loss', g_loss.item(), batch_num)
 
         # 1.2) spectrogram discriminator
+        soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
+        soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
+
         optimizer_D_spec.zero_grad()
         z = encoder(img)
-        gen_img = generator(z)
+        gen_img = generator(z, fake_label)
         
         # loss for real img
-        output_d = dis_spec(img)
+        output_d = dis_spec(img, label)
         real_loss = adversarial_loss(output_d, soft_valid)
 
         # loss for fake img
-        output_d = dis_spec(gen_img.detach())
+        fake_label = torch.LongTensor(np.random.randint(0, CLASS_NUM, img.size(0))).to(device)
+        output_d = dis_spec(gen_img.detach(), fake_label)
         fake_loss = adversarial_loss(output_d, soft_fake)
 
         d_spec_loss = (real_loss + fake_loss) / 2
@@ -141,6 +141,9 @@ for epoch in range(1, epoch_num + 1):
         writer.add_scalar('Spectrogram/D_loss', d_spec_loss.item(), batch_num)
 
         # 2) latent discriminator
+        soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
+        soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
+
         optimizer_D_latent.zero_grad()
         real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
         fake_z = encoder(img)

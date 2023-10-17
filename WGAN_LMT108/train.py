@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-17 03:32:12
+LastEditTime: 2023-10-17 03:58:41
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -46,6 +46,33 @@ def Normalization(X):
     return X_norm
 
 spectrogram = Normalization(spectrogram)
+
+def gradient_penalty(gradient):
+    gradient = gradient.view(len(gradient), -1)
+    gradient_norm = gradient.norm(2, dim=1)
+    penalty = torch.mean((gradient_norm - 1)**2)
+    return penalty
+
+def get_gen_loss(crit_fake_pred):
+    gen_loss = -1. * torch.mean(crit_fake_pred)
+    return gen_loss
+
+def get_crit_loss(crit_fake_pred, crit_real_pred, gp, c_lambda):
+    crit_loss = torch.mean(crit_fake_pred) - torch.mean(crit_real_pred) + c_lambda * gp
+    return crit_loss
+
+def get_gradient(crit, real, fake, epsilon):
+
+    mixed_images = real * epsilon + fake * (1 - epsilon)
+    mixed_scores = crit(mixed_images)
+    gradient = torch.autograd.grad(
+        inputs=mixed_images,
+        outputs=mixed_scores,
+        grad_outputs=torch.ones_like(mixed_scores), 
+        create_graph=True,
+        retain_graph=True,
+    )[0]
+    return gradient
 
 train_dataset = torch.utils.data.TensorDataset(spectrogram, labels)
 train_dataloader = torch.utils.data.DataLoader(
@@ -114,7 +141,7 @@ for epoch in range(1, epoch_num + 1):
         gen_img = generator(z)
         output_d = dis_spec(gen_img)
 
-        g_loss = (adversarial_loss(output_d, valid) + image_loss(gen_img, img)) / 2
+        g_loss = (get_gen_loss(output_d) + image_loss(gen_img, img)) / 2
         g_loss.backward()
         optimizer_G.step()
 
@@ -126,16 +153,20 @@ for epoch in range(1, epoch_num + 1):
         gen_img = generator(z)
         
         # loss for real img
-        output_d = dis_spec(img)
-        real_loss = adversarial_loss(output_d, soft_valid)
+        crit_real_pred = dis_spec(img)
 
         # loss for fake img
-        output_d = dis_spec(gen_img.detach())
-        fake_loss = adversarial_loss(output_d, soft_fake)
+        crit_fake_pred = dis_spec(gen_img.detach())
 
-        d_spec_loss = (real_loss + fake_loss) / 2
+        epsilon = torch.rand(len(img), 1, 1, 1, device=device, requires_grad=True)
+        print(img.shape)
+        gradient = get_gradient(dis_spec, img, gen_img.detach(), epsilon)
 
-        d_spec_loss.backward()
+        gp = gradient_penalty(gradient)
+        d_spec_loss = get_crit_loss(crit_fake_pred, crit_real_pred, gp, 10)
+
+        d_spec_loss.backward(retain_graph=True)
+
         optimizer_D_spec.step()
 
         writer.add_scalar('Spectrogram/D_loss', d_spec_loss.item(), batch_num)
@@ -146,14 +177,19 @@ for epoch in range(1, epoch_num + 1):
         fake_z = encoder(img)
 
         # loss for real distribution
-        output_d = dis_latent(real_z)
-        real_loss = adversarial_loss(output_d, soft_valid)
+        crit_real_pred = dis_latent(real_z)
         # loss for fake distribution
-        output_d = dis_latent(fake_z.detach())
-        fake_loss = adversarial_loss(output_d, soft_fake)
+        crit_fake_pred = dis_latent(fake_z.detach())
+        print(real_z.shape)
 
-        d_latent_loss = (real_loss + fake_loss) / 2
-        d_latent_loss.backward()
+        epsilon = torch.rand(len(img), 1, 1, 1, device=device, requires_grad=True)
+        gradient = get_gradient(dis_latent, real_z, fake_z.detach(), epsilon)
+
+        gp = gradient_penalty(gradient)
+        d_latent_loss = get_crit_loss(crit_fake_pred, crit_real_pred, gp, 10)
+
+        d_latent_loss.backward(retain_graph=True)
+        
         optimizer_D_latent.step()
 
         writer.add_scalar('Latent/D_loss', d_latent_loss.item(), batch_num)
@@ -164,7 +200,7 @@ for epoch in range(1, epoch_num + 1):
 
         output_d = dis_latent(fake_z)
 
-        E_loss = adversarial_loss(output_d, valid)
+        E_loss = get_gen_loss(output_d)
         E_loss.backward()
         optimizer_E.step()
 
