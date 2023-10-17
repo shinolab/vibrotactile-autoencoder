@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-17 18:56:51
+LastEditTime: 2023-10-18 03:25:24
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -12,60 +12,6 @@ import torchvision
 import torch.nn.functional as F
 import numpy as np
 from torch import nn
-
-
-class ResNetEncoder(nn.Module):
-    def __init__(self, feat_dim):
-        super(ResNetEncoder, self).__init__()
-
-        self.flatten = nn.Flatten(start_dim=1)
-
-        self.resize_x = nn.Linear(48 * 320, 3 * 128 * 128)
-        self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(3, 128, 128))
-
-        self.res50 = torchvision.models.resnet50(weights="IMAGENET1K_V2")
-        numFit = self.res50.fc.in_features
-        self.res50.fc = nn.Linear(numFit, feat_dim)
-
-    def forward(self, x):
-        x = self.flatten(x)
-        x = self.resize_x(x)
-        x = self.unflatten_x(x)
-
-        x = self.res50(x)
-        return x
-
-
-class LatentDiscriminator(nn.Module):
-    def __init__(self, feat_dim):
-        super(LatentDiscriminator, self).__init__()
-
-        self.flatten = nn.Flatten(start_dim=1)
-
-        self.resize_x = nn.Linear(feat_dim, 16 * 8)
-        self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(1, 16, 8))
-
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv3 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1, bias=False)
-        self.fc1 = nn.Linear(128 * 512, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc_d = nn.Linear(256, 1)
-
-    def forward(self, x):
-        x = self.unflatten_x(self.resize_x(x))
-
-        x = F.leaky_relu(self.conv1(x), 0.2)
-        x = F.leaky_relu(self.conv2(x), 0.2)
-        x = F.leaky_relu(self.conv3(x), 0.2)
-        x = self.flatten(x)
-
-        x = F.leaky_relu(self.fc1(x), 0.2)
-        x = F.leaky_relu(self.fc2(x), 0.2)
-
-        out_d = self.fc_d(x)
-        out_d = F.sigmoid(out_d)
-        return out_d
 
 
 class _Residual_Block(nn.Module):

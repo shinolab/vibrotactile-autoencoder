@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-17 22:54:00
+LastEditTime: 2023-10-18 03:27:14
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -55,37 +55,27 @@ train_dataloader = torch.utils.data.DataLoader(
 
 adversarial_loss = nn.BCELoss()
 
-FEAT_DIM = 512
+FEAT_DIM = 256
 CLASS_NUM = 108
-encoder = model.ResNetEncoder(feat_dim = FEAT_DIM)
 generator= model.Generator(feat_dim = FEAT_DIM, class_dim = CLASS_NUM)
-dis_latent = model.LatentDiscriminator(feat_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator(class_dim = CLASS_NUM)
 
 gen_lr = 1e-4
-encoder_lr = 1e-4
 d_spec_lr = 1e-4
-d_latent_lr = 1e-4
 
 optimizer_G = optim.Adam(generator.parameters(), lr=gen_lr)
-optimizer_E = optim.Adam(encoder.parameters(), lr=encoder_lr)
 optimizer_D_spec = optim.Adam(dis_spec.parameters(), lr=d_spec_lr)
-optimizer_D_latent = optim.Adam(dis_latent.parameters(), lr=d_latent_lr)
 
-encoder.to(device)
-dis_latent.to(device)
 generator.to(device)
 dis_spec.to(device)
 
-epoch_num = 100
+epoch_num = 50
 
 writer = SummaryWriter()
 tic = time.time()
 batch_num = 0
 
 for epoch in range(1, epoch_num + 1):
-    encoder.train()
-    dis_latent.train()
     generator.train()
     dis_spec.train()
 
@@ -104,7 +94,7 @@ for epoch in range(1, epoch_num + 1):
         # 1.1) generator
         optimizer_G.zero_grad()
         # input latent vector
-        z = encoder(img)
+        z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
         # train generator
         fake_label = torch.LongTensor(np.random.randint(0, CLASS_NUM, img.size(0))).to(device)
         gen_img = generator(z, fake_label)
@@ -121,7 +111,7 @@ for epoch in range(1, epoch_num + 1):
         soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
 
         optimizer_D_spec.zero_grad()
-        z = encoder(img)
+        z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
         gen_img = generator(z, fake_label)
         
         # loss for real img
@@ -140,39 +130,6 @@ for epoch in range(1, epoch_num + 1):
 
         writer.add_scalar('Spectrogram/D_loss', d_spec_loss.item(), batch_num)
 
-        # 2) latent discriminator
-        soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
-        soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
-
-        optimizer_D_latent.zero_grad()
-        real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
-        fake_z = encoder(img)
-
-        # loss for real distribution
-        output_d = dis_latent(real_z)
-        real_loss = adversarial_loss(output_d, soft_valid)
-        # loss for fake distribution
-        output_d = dis_latent(fake_z.detach())
-        fake_loss = adversarial_loss(output_d, soft_fake)
-
-        d_latent_loss = (real_loss + fake_loss) / 2
-        d_latent_loss.backward()
-        optimizer_D_latent.step()
-
-        writer.add_scalar('Latent/D_loss', d_latent_loss.item(), batch_num)
-
-        # 3) encoder
-        optimizer_E.zero_grad()
-        fake_z = encoder(img)
-
-        output_d = dis_latent(fake_z)
-
-        E_loss = adversarial_loss(output_d, valid)
-        E_loss.backward()
-        optimizer_E.step()
-
-        writer.add_scalar('Latent/G_loss', E_loss.item(), batch_num)
-
     toc = time.time()
 
     writer.add_image('Real Spectrogram 1', img[0], epoch)
@@ -189,18 +146,9 @@ for epoch in range(1, epoch_num + 1):
     print('=====================================================================')
     print('Epoch: ', epoch, '\tAccumulated time: ', round((toc - tic) / 3600, 4), ' hours')
     print('Generator Loss: ', round(g_loss.item(), 4), '\tSpec Discriminator Loss: ', round(d_spec_loss.item(), 4))
-    print('Encoder Loss: ', round(E_loss.item(), 4), '\tLatent Discriminator Loss: ', round(d_latent_loss.item(), 4))
-
-    fake_z_sample = fake_z[0].cpu().detach().numpy()
-    u = fake_z_sample.mean()
-    std = fake_z_sample.std()
-    kstest = stats.kstest(fake_z_sample, 'norm', (u, std))
-    print('pvalue (latent space vs gaussian distribution): ' + str(kstest.pvalue))
     print('=====================================================================\n')
 
 writer.close()
 
 torch.save(generator.state_dict(), 'generator_' + str(FEAT_DIM) + 'd.pt')
 torch.save(dis_spec.state_dict(), 'dis_spec_' + str(FEAT_DIM) + 'd.pt')
-torch.save(encoder.state_dict(), 'encoder_' + str(FEAT_DIM) + 'd.pt')
-torch.save(dis_latent.state_dict(), 'dis_latent_' + str(FEAT_DIM) + 'd.pt')
