@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-18 03:25:24
+LastEditTime: 2023-10-18 14:45:10
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -77,7 +77,10 @@ class Generator(nn.Module):
             layers.append(block())
         return nn.Sequential(*layers)
 
-    def forward(self, x, y):
+    def forward(self, input):
+        x = input[:, :-1]
+        y = input[:, -1:]
+
         x = self.unflatten_x(self.resize_x(x))
         y = self.label_emb(y)
         y = self.unflatten_y(self.resize_y(y))
@@ -97,8 +100,10 @@ class Generator(nn.Module):
         return jacobian
 
     def calc_model_gradient_FDM(self, latent_vector, device, delta=1e-4):
-        sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.encoded_space_dim + 1, axis=0)
-        sample_latents[1:] += np.identity(self.encoded_space_dim) * delta
+        # an additional dimension for label
+        sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.feat_dim + 1 + 1, axis=0)
+        # an additional dimension for label
+        sample_latents[1:] += np.identity(self.feat_dim + 1) * delta
 
         sample_datas = self.forward(sample_latents.to(device))
         sample_datas = sample_datas.reshape(-1, 48*320)

@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-18 03:27:14
+LastEditTime: 2023-10-18 14:43:59
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -61,7 +61,7 @@ generator= model.Generator(feat_dim = FEAT_DIM, class_dim = CLASS_NUM)
 dis_spec = model.SpectrogramDiscriminator(class_dim = CLASS_NUM)
 
 gen_lr = 1e-4
-d_spec_lr = 1e-4
+d_spec_lr = 5e-5
 
 optimizer_G = optim.Adam(generator.parameters(), lr=gen_lr)
 optimizer_D_spec = optim.Adam(dis_spec.parameters(), lr=d_spec_lr)
@@ -97,7 +97,8 @@ for epoch in range(1, epoch_num + 1):
         z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
         # train generator
         fake_label = torch.LongTensor(np.random.randint(0, CLASS_NUM, img.size(0))).to(device)
-        gen_img = generator(z, fake_label)
+        z = torch.cat((z, fake_label), dim=1).to(torch.float32)
+        gen_img = generator(z)
         output_d = dis_spec(gen_img, fake_label)
 
         g_loss = adversarial_loss(output_d, valid)
@@ -111,15 +112,16 @@ for epoch in range(1, epoch_num + 1):
         soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
 
         optimizer_D_spec.zero_grad()
+        fake_label = torch.LongTensor(np.random.randint(0, CLASS_NUM, img.size(0))).to(device)
         z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
-        gen_img = generator(z, fake_label)
+        z = torch.cat((z, fake_label), dim=1).to(torch.float32)
+        gen_img = generator(z)
         
         # loss for real img
         output_d = dis_spec(img, label)
         real_loss = adversarial_loss(output_d, soft_valid)
 
         # loss for fake img
-        fake_label = torch.LongTensor(np.random.randint(0, CLASS_NUM, img.size(0))).to(device)
         output_d = dis_spec(gen_img.detach(), fake_label)
         fake_loss = adversarial_loss(output_d, soft_fake)
 
