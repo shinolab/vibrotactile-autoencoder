@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-20 12:12:27
+LastEditTime: 2023-10-20 17:05:53
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -113,8 +113,8 @@ class HeatmapWindow(QMainWindow):
         # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
         
         # initialize the conditional part
-        init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
-        # init_z_class = np.zeros(CLASS_NUM)
+        # init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
+        init_z_class = np.zeros(CLASS_NUM)
         init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM))
         init_z = np.append(init_z_noise, init_z_class)
         init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
