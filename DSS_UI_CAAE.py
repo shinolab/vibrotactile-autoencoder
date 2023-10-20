@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-20 17:05:53
+LastEditTime: 2023-10-20 17:27:28
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -16,7 +16,7 @@ import sys
 import matplotlib.pyplot as plt
 from torch import nn
 from torchvision import transforms
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QSlider, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QSlider, QPushButton, QLabel
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
@@ -79,7 +79,7 @@ class HeatmapWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Heatmap with Slider")
-        self.setGeometry(100, 100, 700, 200)
+        self.setGeometry(100, 100, 400, 300)
 
         model_name = 'CAAE_LMT108'
         self.decoder = model.Generator(feat_dim=FEAT_DIM, class_dim=CLASS_NUM)
@@ -139,10 +139,12 @@ class HeatmapWindow(QMainWindow):
         layout = QVBoxLayout(main_widget)
 
         # 创建显示热度图的区域
+        layout.addWidget(QLabel('Target Real Spectrogram'), 1, Qt.AlignCenter | Qt.AlignTop)
         self.figure_real, self.ax_real = plt.subplots()
         self.canvas_real = FigureCanvas(self.figure_real)
         layout.addWidget(self.canvas_real)
 
+        layout.addWidget(QLabel('Generated Spectrogram'), 1, Qt.AlignCenter | Qt.AlignTop)
         self.figure_fake, self.ax_fake = plt.subplots()
         self.canvas_fake = FigureCanvas(self.figure_fake)
         layout.addWidget(self.canvas_fake)
@@ -165,6 +167,8 @@ class HeatmapWindow(QMainWindow):
 
         self.ax_real.clear()
         self.ax_real.imshow(self.target_spec, cmap='viridis')
+        self.ax_real.set_xticks([])
+        self.ax_real.set_yticks([])
         self.canvas_real.draw()
 
     def updateValues(self, _update_optimizer_flag):
@@ -186,6 +190,8 @@ class HeatmapWindow(QMainWindow):
         # 绘制热度图
         self.ax_fake.clear()
         self.ax_fake.imshow(x.cpu().detach().numpy().reshape(48, 320), cmap='viridis')
+        self.ax_fake.set_xticks([])
+        self.ax_fake.set_yticks([])
         self.canvas_fake.draw()
 
 
