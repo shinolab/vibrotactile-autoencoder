@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-20 17:27:28
+LastEditTime: 2023-10-21 03:52:07
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -85,7 +85,7 @@ class HeatmapWindow(QMainWindow):
         self.decoder = model.Generator(feat_dim=FEAT_DIM, class_dim=CLASS_NUM)
 
         # Model initialization and parameter loading
-        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
+        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd_gamma10.pt', map_location=torch.device('cpu'))
         decoder_dict = {k: v for k, v in decoder_dict.items()}
         self.decoder.load_state_dict(decoder_dict)
 
