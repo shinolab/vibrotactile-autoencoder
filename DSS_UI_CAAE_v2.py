@@ -2,13 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-21 19:58:00
+LastEditTime: 2023-10-21 19:58:18
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
 import numpy as np
 from GlobalOptimizer import JacobianOptimizer
-from ResNet50_SRResNet_ACGAN_LMT108 import model
+from CAAE_LMT108_v2 import model
 import torch
 import pickle
 import sys
@@ -78,11 +78,11 @@ class HeatmapWindow(QMainWindow):
         self.setWindowTitle("Heatmap with Slider")
         self.setGeometry(100, 100, 400, 300)
 
-        model_name = 'ResNet50_SRResNet_ACGAN_LMT108'
-        self.decoder = model.Generator(encoded_space_dim = FEAT_DIM)
+        model_name = 'CAAE_LMT108'
+        self.decoder = model.Generator(feat_dim=FEAT_DIM)
 
         # Model initialization and parameter loading
-        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
+        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd_gamma10.pt', map_location=torch.device('cpu'))
         decoder_dict = {k: v for k, v in decoder_dict.items()}
         self.decoder.load_state_dict(decoder_dict)
 
@@ -109,11 +109,7 @@ class HeatmapWindow(QMainWindow):
                 break
         # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
         
-        # initialize the conditional part
-        init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
-        # init_z_class = np.zeros(CLASS_NUM)
-        init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM - CLASS_NUM))
-        init_z = np.append(init_z_noise, init_z_class)
+        init_z = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM))
         init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
         init_z = np.matmul(random_A, init_low_z)
 

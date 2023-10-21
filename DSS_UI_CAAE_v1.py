@@ -2,20 +2,17 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-21 03:52:07
+LastEditTime: 2023-10-21 19:58:10
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
 import numpy as np
-import pySequentialLineSearch
 from GlobalOptimizer import JacobianOptimizer
-from CAAE_LMT108 import model
+from CAAE_LMT108_v1 import model
 import torch
 import pickle
 import sys
 import matplotlib.pyplot as plt
-from torch import nn
-from torchvision import transforms
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QSlider, QPushButton, QLabel
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas

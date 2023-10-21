@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-18 14:45:10
+LastEditTime: 2023-10-21 19:47:25
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -12,6 +12,69 @@ import torchvision
 import torch.nn.functional as F
 import numpy as np
 from torch import nn
+
+
+class ResNetEncoder(nn.Module):
+    def __init__(self, feat_dim, class_dim):
+        super(ResNetEncoder, self).__init__()
+
+        self.flatten = nn.Flatten(start_dim=1)
+
+        self.resize_x = nn.Linear(48 * 320, 2 * 128 * 128)
+        self.resize_y = nn.Linear(class_dim, 1 * 128 * 128)
+
+        self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(2, 128, 128))
+        self.unflatten_y = nn.Unflatten(dim=1, unflattened_size=(1, 128, 128))
+
+        self.res50 = torchvision.models.resnet50(weights="IMAGENET1K_V2")
+        numFit = self.res50.fc.in_features
+        self.res50.fc = nn.Linear(numFit, feat_dim)
+
+    def forward(self, x, y):
+        x = self.flatten(x)
+
+        x = self.unflatten_x(self.resize_x(x))
+        y = self.unflatten_y(self.resize_y(y))
+
+        x = torch.cat([x, y], 1)
+        x = self.res50(x)
+        return x
+
+
+class LatentDiscriminator(nn.Module):
+    def __init__(self, feat_dim, class_dim):
+        super(LatentDiscriminator, self).__init__()
+
+        self.flatten = nn.Flatten(start_dim=1)
+
+        self.resize_x = nn.Linear(feat_dim, 16 * 8)
+        self.resize_y = nn.Linear(class_dim, 16 * 8)
+        self.unflatten = nn.Unflatten(dim=1, unflattened_size=(1, 16, 8))
+
+        self.conv1 = nn.Conv2d(in_channels=2, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv3 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1, bias=False)
+        self.fc1 = nn.Linear(128 * 512, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc_d = nn.Linear(256, 1)
+
+    def forward(self, x, y):
+        x = self.unflatten(self.resize_x(x))
+        y = self.unflatten(self.resize_y(y))
+
+        x = torch.cat([x, y], 1)
+
+        x = F.leaky_relu(self.conv1(x), 0.2)
+        x = F.leaky_relu(self.conv2(x), 0.2)
+        x = F.leaky_relu(self.conv3(x), 0.2)
+        x = self.flatten(x)
+
+        x = F.leaky_relu(self.fc1(x), 0.2)
+        x = F.leaky_relu(self.fc2(x), 0.2)
+
+        out_d = self.fc_d(x)
+        out_d = F.sigmoid(out_d)
+        return out_d
 
 
 class _Residual_Block(nn.Module):
@@ -33,19 +96,14 @@ class _Residual_Block(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, feat_dim, class_dim):
+    def __init__(self, feat_dim):
         super(Generator, self).__init__()
         self.feat_dim = feat_dim
-        self.class_dim = class_dim
 
         self.resize_x = nn.Linear(feat_dim, 12 * 80)
         self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(1, 12, 80))
 
-        self.label_emb = nn.Embedding(class_dim, class_dim)
-        self.resize_y = nn.Linear(class_dim, 12 * 80)
-        self.unflatten_y = nn.Unflatten(dim=1, unflattened_size=(1, 12, 80))
-
-        self.conv_input = nn.Conv2d(in_channels=2, out_channels=64, kernel_size=9, stride=1, padding=4, bias=False)
+        self.conv_input = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=9, stride=1, padding=4, bias=False)
         self.relu = nn.LeakyReLU(0.2, inplace=True)
 
         self.residual = self.make_layer(_Residual_Block, 16)
@@ -77,15 +135,8 @@ class Generator(nn.Module):
             layers.append(block())
         return nn.Sequential(*layers)
 
-    def forward(self, input):
-        x = input[:, :-1]
-        y = input[:, -1:]
-
+    def forward(self, x):
         x = self.unflatten_x(self.resize_x(x))
-        y = self.label_emb(y)
-        y = self.unflatten_y(self.resize_y(y))
-        x = torch.cat([x, y], 1)
-
         out = self.relu(self.conv_input(x))
         residual = out
         out = self.residual(out)
@@ -100,10 +151,8 @@ class Generator(nn.Module):
         return jacobian
 
     def calc_model_gradient_FDM(self, latent_vector, device, delta=1e-4):
-        # an additional dimension for label
-        sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.feat_dim + 1 + 1, axis=0)
-        # an additional dimension for label
-        sample_latents[1:] += np.identity(self.feat_dim + 1) * delta
+        sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.feat_dim + 1, axis=0)
+        sample_latents[1:] += np.identity(self.feat_dim) * delta
 
         sample_datas = self.forward(sample_latents.to(device))
         sample_datas = sample_datas.reshape(-1, 48*320)
@@ -116,7 +165,6 @@ class SpectrogramDiscriminator(nn.Module):
     def __init__(self, class_dim):
         super(SpectrogramDiscriminator, self).__init__()
 
-        self.label_emb = nn.Embedding(class_dim, class_dim)
         self.resize_y = nn.Linear(class_dim, 48 * 320)
         self.unflatten_y = nn.Unflatten(dim=1, unflattened_size=(1, 48, 320))
 
@@ -166,7 +214,6 @@ class SpectrogramDiscriminator(nn.Module):
                 m.bias.data.fill_(0)
 
     def forward(self, x, y):
-        y = self.label_emb(y)
         y = self.unflatten_y(self.resize_y(y))
         x = torch.cat([x, y], 1)
 

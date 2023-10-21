@@ -2,11 +2,10 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-18 15:31:17
+LastEditTime: 2023-10-21 19:57:48
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim as optim
 import model
@@ -14,12 +13,8 @@ import time
 import torch
 import pickle
 import os
-from sklearn import preprocessing
-from torchvision import transforms
-from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torch import nn
-from scipy import stats
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
