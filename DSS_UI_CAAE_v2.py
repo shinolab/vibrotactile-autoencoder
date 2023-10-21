@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-21 19:58:18
+LastEditTime: 2023-10-21 20:32:30
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -78,7 +78,7 @@ class HeatmapWindow(QMainWindow):
         self.setWindowTitle("Heatmap with Slider")
         self.setGeometry(100, 100, 400, 300)
 
-        model_name = 'CAAE_LMT108'
+        model_name = 'CAAE_LMT108_v2'
         self.decoder = model.Generator(feat_dim=FEAT_DIM)
 
         # Model initialization and parameter loading
