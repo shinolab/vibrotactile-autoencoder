@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-21 20:32:36
+LastEditTime: 2023-10-22 04:06:59
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -13,6 +13,8 @@ import torch
 import pickle
 import sys
 import matplotlib.pyplot as plt
+import librosa
+import sounddevice as sd
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QSlider, QPushButton, QLabel
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -180,16 +182,24 @@ class HeatmapWindow(QMainWindow):
         z = self.optimizer.get_z(t)
 
         x = self.optimizer.f(z.reshape(1, -1))[0]
+        spec = x.cpu().detach().numpy().reshape(48, 320)
         score = self.optimizer.g(x.reshape(1, -1))[0]
 
         print(score)
 
         # 绘制热度图
         self.ax_fake.clear()
-        self.ax_fake.imshow(x.cpu().detach().numpy().reshape(48, 320), cmap='viridis')
+        self.ax_fake.imshow(spec, cmap='viridis')
         self.ax_fake.set_xticks([])
         self.ax_fake.set_yticks([])
         self.canvas_fake.draw()
+
+        ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80)#もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
+        spec = np.append(spec, ex, axis=0)
+
+        spec = librosa.db_to_amplitude(spec)
+        re_wav = librosa.griffinlim(spec,n_iter=5, n_fft=2048, hop_length=int(2048 * 0.1), window='hann')
+        sd.play(20 * re_wav)
 
 
 if __name__ == "__main__":
