@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-17 03:15:35
+LastEditTime: 2023-10-21 17:04:07
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -79,7 +79,7 @@ class HeatmapWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Heatmap with Slider")
-        self.setGeometry(100, 100, 700, 200)
+        self.setGeometry(100, 100, 400, 300)
 
         model_name = 'ResNet50_SRResNet_ACGAN_LMT108'
         self.decoder = model.Generator(encoded_space_dim = FEAT_DIM)
@@ -165,6 +165,8 @@ class HeatmapWindow(QMainWindow):
 
         self.ax_real.clear()
         self.ax_real.imshow(self.target_spec, cmap='viridis')
+        self.ax_real.set_xticks([])
+        self.ax_real.set_yticks([])
         self.canvas_real.draw()
 
     def updateValues(self, _update_optimizer_flag):
@@ -186,6 +188,8 @@ class HeatmapWindow(QMainWindow):
         # 绘制热度图
         self.ax_fake.clear()
         self.ax_fake.imshow(x.cpu().detach().numpy().reshape(48, 320), cmap='viridis')
+        self.ax_fake.set_xticks([])
+        self.ax_fake.set_yticks([])
         self.canvas_fake.draw()
 
 
