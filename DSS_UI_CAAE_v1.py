@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-22 04:06:59
+LastEditTime: 2023-10-22 14:36:16
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -199,7 +199,7 @@ class HeatmapWindow(QMainWindow):
 
         spec = librosa.db_to_amplitude(spec)
         re_wav = librosa.griffinlim(spec,n_iter=5, n_fft=2048, hop_length=int(2048 * 0.1), window='hann')
-        sd.play(20 * re_wav)
+        sd.play(np.tile(20*re_wav, 10))
 
 
 if __name__ == "__main__":
