@@ -2,13 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-22 14:36:16
+LastEditTime: 2023-10-24 04:47:10
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
 import numpy as np
 from GlobalOptimizer import JacobianOptimizer
-from CAAE_LMT108_v1 import model
+from CAAE_LMT108 import model
 import torch
 import pickle
 import sys
@@ -80,7 +80,7 @@ class HeatmapWindow(QMainWindow):
         self.setWindowTitle("Heatmap with Slider")
         self.setGeometry(100, 100, 400, 300)
 
-        model_name = 'CAAE_LMT108_v1'
+        model_name = 'CAAE_LMT108'
         self.decoder = model.Generator(feat_dim=FEAT_DIM, class_dim=CLASS_NUM)
 
         # Model initialization and parameter loading
