@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-24 23:30:01
+LastEditTime: 2023-10-24 23:52:26
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -166,7 +166,7 @@ class HeatmapWindow(QMainWindow):
         self.gif_label = QLabel()
         self.gif_label.setMovie(self.wav_gif)
         self.gif_label.setMinimumSize(QtCore.QSize(180, 75))
-        self.gif_label.setMaximumSize(QtCore.QSize(180, 75))
+        self.gif_label.setMaximumSize(QtCore.QSize(180, 150))
         self.gif_label.setScaledContents(True)
 
         layout.addWidget(self.gif_label, 1, Qt.AlignCenter | Qt.AlignCenter)
