@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-24 23:52:26
+LastEditTime: 2023-10-25 01:12:09
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -82,7 +82,7 @@ class HeatmapWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Vibration Optimizer")
-        self.setGeometry(100, 100, 200, 470)
+        self.setGeometry(100, 100, 200, 400)
 
         model_name = 'CAAE_LMT108'
         self.decoder = model.Generator(feat_dim=FEAT_DIM, class_dim=CLASS_NUM)
@@ -100,14 +100,12 @@ class HeatmapWindow(QMainWindow):
     
         index = np.random.randint(len(trainset['spectrogram']))
         self.target_spec = trainset['spectrogram'][index]
-        soundfile = trainset['filename'][index]
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
         slider_length = getSliderLength(FEAT_DIM+CLASS_NUM, 1, 0.2)
         target_latent = np.random.uniform(-1, 1, FEAT_DIM+CLASS_NUM)
         target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
-        # target_data = decoder(target_latent.reshape(1, -1))[0]
 
         while True:
             random_A = getRandomAMatrix(FEAT_DIM+CLASS_NUM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
@@ -116,7 +114,6 @@ class HeatmapWindow(QMainWindow):
         # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
         
         # initialize the conditional part
-        # init_z_class = np.random.uniform(low=0, high=1, size=(CLASS_NUM))
         init_z_class = np.zeros(CLASS_NUM)
         init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM))
         init_z = np.append(init_z_noise, init_z_class)
@@ -145,13 +142,12 @@ class HeatmapWindow(QMainWindow):
         title_font.setPointSize(16)
         title_font.setBold(True)
 
-        # 创建显示热度图的区域
         target_title = QLabel('Target Vibration Recording')
         target_title.setFont(title_font)
         layout.addWidget(target_title, 1, Qt.AlignCenter | Qt.AlignTop)
 
         real_vib_layout = QHBoxLayout()
-        real_vib_layout.addWidget(QLabel('Click to play the target vibration'), 1, Qt.AlignCenter | Qt.AlignCenter)
+        real_vib_layout.addWidget(QLabel('Click to play the vibration'), 1, Qt.AlignCenter | Qt.AlignCenter)
 
         play_stop_button = QPushButton("Play")
         play_stop_button.clicked.connect(self.playRealVib)
@@ -176,9 +172,6 @@ class HeatmapWindow(QMainWindow):
         optimization_title = QLabel('Generated Vibration')
         optimization_title.setFont(title_font)
         layout.addWidget(optimization_title, 1, Qt.AlignCenter | Qt.AlignTop)
-        self.figure_fake, self.ax_fake = plt.subplots()
-        self.canvas_fake = FigureCanvas(self.figure_fake)
-        layout.addWidget(self.canvas_fake)
 
         # 创建滑块并设置范围和初始值
         layout.addWidget(QLabel('Select the slider position of\
@@ -205,7 +198,6 @@ class HeatmapWindow(QMainWindow):
         # 连接滑块的valueChanged信号到更新热度图的槽函数
         self.slider.valueChanged.connect(lambda value: self.updateValues(_update_optimizer_flag=False))
 
-        # 初始化热度图
         self.updateValues(_update_optimizer_flag=False)
         sd.stop()
 
@@ -233,15 +225,6 @@ class HeatmapWindow(QMainWindow):
         score = self.optimizer.g(x.reshape(1, -1))[0]
 
         print(score)
-
-        # 绘制热度图
-        self.ax_fake.clear()
-        self.ax_fake.imshow(spec, cmap='viridis')
-        self.ax_fake.set_xticks([])
-        self.ax_fake.set_yticks([])
-        self.ax_fake.title.set_text('Generated Spectrogram')
-        self.ax_fake.title.set_size(8) 
-        self.canvas_fake.draw()
 
         ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80)#もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
         spec = np.append(spec, ex, axis=0)
