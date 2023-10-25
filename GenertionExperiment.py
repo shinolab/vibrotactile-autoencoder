@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-25 01:12:09
+LastEditTime: 2023-10-26 02:57:21
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -190,7 +190,7 @@ class HeatmapWindow(QMainWindow):
         save_button.clicked.connect(self.saveWavFile)
         next_save_button.addWidget(save_button)
 
-        layout.addWidget(QLabel('Click \'Next\' to enter the next loop\
+        layout.addWidget(QLabel('Click \'Next\' to enter the next iteration\
                                 \nClick \'Save\' to save the current vibration'), 1, Qt.AlignCenter | Qt.AlignTop)
 
         layout.addLayout(next_save_button)
