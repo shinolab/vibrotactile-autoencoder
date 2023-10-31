@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-26 02:57:21
+LastEditTime: 2023-10-31 17:37:19
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -16,6 +16,7 @@ import scipy
 import matplotlib.pyplot as plt
 import librosa
 import sounddevice as sd
+import pyloudnorm as pyln
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, 
                              QWidget, QSlider, QPushButton, QLabel, QFrame)
 from PyQt5.QtGui import QMovie
@@ -95,11 +96,15 @@ class HeatmapWindow(QMainWindow):
         self.decoder.eval() 
         self.decoder.to(device)
 
-        with open('trainset_LMT_large.pickle', 'rb') as file:
+        with open('trainset_7-class.pickle', 'rb') as file:
             trainset = pickle.load(file)
     
         index = np.random.randint(len(trainset['spectrogram']))
         self.target_spec = trainset['spectrogram'][index]
+
+        self.target_wav = self.spec2wav(self.target_spec)
+        meter = pyln.Meter(44100) # create BS.1770 meter
+        self.target_loudness = meter.integrated_loudness(self.target_wav)
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
@@ -201,9 +206,20 @@ class HeatmapWindow(QMainWindow):
         self.updateValues(_update_optimizer_flag=False)
         sd.stop()
 
+    def spec2wav(self, spec):
+        ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80) #もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
+        spec = np.append(spec, ex, axis=0)
+
+        spec = librosa.db_to_amplitude(spec)
+        re_wav = librosa.griffinlim(spec,n_iter=100, n_fft=2048, hop_length=int(2048 * 0.1), window='hann')
+
+        return re_wav
+
     def playRealVib(self):
-        data, fs = librosa.load('VibTac-12/Texture3.wav', sr=8000)
-        sd.play(data*0.5, samplerate=8000)
+        play_wav = pyln.normalize.loudness(self.target_wav, self.target_loudness, -12.)
+
+        play_wav = np.tile(play_wav, 10)
+        sd.play(play_wav, samplerate=44100)
         self.wav_gif.start()
 
     def saveWavFile(self):
@@ -222,16 +238,16 @@ class HeatmapWindow(QMainWindow):
 
         x = self.optimizer.f(z.reshape(1, -1))[0]
         spec = x.cpu().detach().numpy().reshape(48, 320)
-        score = self.optimizer.g(x.reshape(1, -1))[0]
 
-        print(score)
+        re_wav = self.spec2wav(spec)
 
-        ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80)#もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
-        spec = np.append(spec, ex, axis=0)
+        meter = pyln.Meter(44100) # create BS.1770 meter
+        loudness = meter.integrated_loudness(re_wav)
 
-        spec = librosa.db_to_amplitude(spec)
-        re_wav = librosa.griffinlim(spec,n_iter=100, n_fft=2048, hop_length=int(2048 * 0.1), window='hann')
-        self.re_wav = np.tile(20 * re_wav, 10)
+        # loudness normalize audio to target
+        loudness_normalized_audio = pyln.normalize.loudness(re_wav, loudness, -12.)
+
+        self.re_wav = np.tile(loudness_normalized_audio, 10)
         sd.play(self.re_wav)
 
         self.wav_gif.stop()

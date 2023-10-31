@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-31 17:17:26
+LastEditTime: 2023-10-31 18:25:53
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -23,16 +23,16 @@ class ResNetEncoder(nn.Module):
         self.resize_x = nn.Linear(48 * 320, 3 * 128 * 128)
         self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(3, 128, 128))
 
-        self.res50 = torchvision.models.resnet50(weights="IMAGENET1K_V2")
-        numFit = self.res50.fc.in_features
-        self.res50.fc = nn.Linear(numFit, feat_dim)
+        self.res = torchvision.models.resnet18()
+        numFit = self.res.fc.in_features
+        self.res.fc = nn.Linear(numFit, feat_dim)
 
     def forward(self, x):
         x = self.flatten(x)
         x = self.resize_x(x)
         x = self.unflatten_x(x)
 
-        x = self.res50(x)
+        x = self.res(x)
         return x
 
 
@@ -101,7 +101,7 @@ class Generator(nn.Module):
         self.conv_input = nn.Conv2d(in_channels=2, out_channels=64, kernel_size=9, stride=1, padding=4, bias=False)
         self.relu = nn.LeakyReLU(0.2, inplace=True)
 
-        self.residual = self.make_layer(_Residual_Block, 16)
+        self.residual = self.make_layer(_Residual_Block, 8)
 
         self.conv_mid = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn_mid = nn.InstanceNorm2d(64, affine=True)

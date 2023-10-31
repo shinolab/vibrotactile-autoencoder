@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-20 21:02:34
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-07-04 03:12:48
+LastEditTime: 2023-10-31 16:20:20
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import numpy as np
@@ -21,7 +21,7 @@ class GlobalOptimizer():
         self.current_x = self.f(self.current_z.reshape(1, -1))[0]
         self.current_score = self.g(self.current_x.reshape(1, -1))
 
-        print('Initialize', self.name, 'with score', self.current_score )
+        # print('Initialize', self.name, 'with score', self.current_score )
 
     def get_z(self, t):
         pass

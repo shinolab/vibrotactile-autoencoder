@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-31 17:17:26
+LastEditTime: 2023-10-31 18:05:07
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -15,24 +15,31 @@ from torch import nn
 
 
 class ResNetEncoder(nn.Module):
-    def __init__(self, feat_dim):
+    def __init__(self, feat_dim, class_dim):
         super(ResNetEncoder, self).__init__()
 
         self.flatten = nn.Flatten(start_dim=1)
 
-        self.resize_x = nn.Linear(48 * 320, 3 * 128 * 128)
-        self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(3, 128, 128))
+        self.resize_x = nn.Linear(48 * 320, 2 * 128 * 128)
+        self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(2, 128, 128))
 
-        self.res50 = torchvision.models.resnet50(weights="IMAGENET1K_V2")
-        numFit = self.res50.fc.in_features
-        self.res50.fc = nn.Linear(numFit, feat_dim)
+        self.resize_y = nn.Linear(class_dim, 1 * 128 * 128)
+        self.unflatten_y = nn.Unflatten(dim=1, unflattened_size=(1, 128, 128))
 
-    def forward(self, x):
+        self.res = torchvision.models.resnet18()
+        numFit = self.res.fc.in_features
+        self.res.fc = nn.Linear(numFit, feat_dim)
+
+    def forward(self, x, y):
         x = self.flatten(x)
         x = self.resize_x(x)
         x = self.unflatten_x(x)
 
-        x = self.res50(x)
+        y = self.resize_y(y)
+        y = self.unflatten_y(y)
+
+        x = torch.cat([x, y], 1)
+        x = self.res(x)
         return x
 
 
@@ -51,6 +58,8 @@ class LatentDiscriminator(nn.Module):
         self.fc1 = nn.Linear(128 * 512, 512)
         self.fc2 = nn.Linear(512, 256)
         self.fc_d = nn.Linear(256, 1)
+        self.fc_c = nn.Linear(256, 9)
+
 
     def forward(self, x):
         x = self.unflatten_x(self.resize_x(x))
@@ -64,8 +73,10 @@ class LatentDiscriminator(nn.Module):
         x = F.leaky_relu(self.fc2(x), 0.2)
 
         out_d = self.fc_d(x)
+        out_c = self.fc_c(x)
         out_d = F.sigmoid(out_d)
-        return out_d
+        out_c = F.softmax(out_c, dim=1)
+        return out_d, out_c
 
 
 class _Residual_Block(nn.Module):
@@ -87,21 +98,17 @@ class _Residual_Block(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, feat_dim, class_dim):
+    def __init__(self, feat_dim):
         super(Generator, self).__init__()
         self.feat_dim = feat_dim
-        self.class_dim = class_dim
 
         self.resize_x = nn.Linear(feat_dim, 12 * 80)
         self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(1, 12, 80))
 
-        self.resize_y = nn.Linear(class_dim, 12 * 80)
-        self.unflatten_y = nn.Unflatten(dim=1, unflattened_size=(1, 12, 80))
-
-        self.conv_input = nn.Conv2d(in_channels=2, out_channels=64, kernel_size=9, stride=1, padding=4, bias=False)
+        self.conv_input = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=9, stride=1, padding=4, bias=False)
         self.relu = nn.LeakyReLU(0.2, inplace=True)
 
-        self.residual = self.make_layer(_Residual_Block, 16)
+        self.residual = self.make_layer(_Residual_Block, 8)
 
         self.conv_mid = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn_mid = nn.InstanceNorm2d(64, affine=True)
@@ -131,12 +138,7 @@ class Generator(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, input):
-        x = input[:, :self.feat_dim]
-        y = input[:, -self.class_dim:]
-
-        x = self.unflatten_x(self.resize_x(x))
-        y = self.unflatten_y(self.resize_y(y))
-        x = torch.cat([x, y], 1)
+        x = self.unflatten_x(self.resize_x(input))
 
         out = self.relu(self.conv_input(x))
         residual = out
@@ -152,8 +154,8 @@ class Generator(nn.Module):
         return jacobian
 
     def calc_model_gradient_FDM(self, latent_vector, device, delta=1e-4):
-        sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.feat_dim + self.class_dim + 1, axis=0)
-        sample_latents[1:] += np.identity(self.feat_dim + self.class_dim) * delta
+        sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.feat_dim + 1, axis=0)
+        sample_latents[1:] += np.identity(self.feat_dim) * delta
 
         sample_datas = self.forward(sample_latents.to(device))
         sample_datas = sample_datas.reshape(-1, 48*320)
