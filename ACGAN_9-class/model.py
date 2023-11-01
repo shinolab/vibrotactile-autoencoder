@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-31 19:31:28
+LastEditTime: 2023-11-01 17:10:12
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -26,7 +26,7 @@ class ResNetEncoder(nn.Module):
         self.resize_y = nn.Linear(class_dim, 1 * 128 * 128)
         self.unflatten_y = nn.Unflatten(dim=1, unflattened_size=(1, 128, 128))
 
-        self.res = torchvision.models.resnet18()
+        self.res = torchvision.models.resnet50(weights="IMAGENET1K_V2")
         numFit = self.res.fc.in_features
         self.res.fc = nn.Linear(numFit, feat_dim)
 
@@ -44,11 +44,11 @@ class ResNetEncoder(nn.Module):
 
 
 class LatentDiscriminator(nn.Module):
-    def __init__(self, encoded_space_dim):
+    def __init__(self, feat_dim):
         super(LatentDiscriminator, self).__init__()
 
         self.flatten = nn.Flatten(start_dim=1)
-        self.resize = nn.Linear(encoded_space_dim, 16 * 8)
+        self.resize = nn.Linear(feat_dim, 16 * 8)
         self.unflatten = nn.Unflatten(dim=1, unflattened_size=(1, 16, 8))
 
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)

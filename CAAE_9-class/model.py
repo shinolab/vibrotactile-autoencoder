@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-31 18:25:53
+LastEditTime: 2023-11-01 17:07:58
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -23,7 +23,7 @@ class ResNetEncoder(nn.Module):
         self.resize_x = nn.Linear(48 * 320, 3 * 128 * 128)
         self.unflatten_x = nn.Unflatten(dim=1, unflattened_size=(3, 128, 128))
 
-        self.res = torchvision.models.resnet18()
+        self.res = torchvision.models.resnet50(weights="IMAGENET1K_V2")
         numFit = self.res.fc.in_features
         self.res.fc = nn.Linear(numFit, feat_dim)
 

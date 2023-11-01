@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-31 19:36:24
+LastEditTime: 2023-11-01 03:45:24
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -97,7 +97,7 @@ for epoch in range(1, epoch_num + 1):
 
         img = torch.unsqueeze(img, 1) # Add channel axis (1 channel)
         img = img.to(device)
-        label = label.to(device)
+        label = label.to(torch.float32).to(device)
 
         soft_scale = 0.3
         valid = torch.autograd.Variable(torch.Tensor(img.size(0), 1).fill_(1.0), requires_grad=False).to(device)
