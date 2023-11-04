@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-03 12:57:22
+LastEditTime: 2023-11-03 22:42:24
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -87,7 +87,7 @@ c_lr = 1e-3
 optimizer_G = optim.Adam(generator.parameters(), lr=gen_lr)
 optimizer_D_spec = optim.Adam(dis_spec.parameters(), lr=d_lr)
 optimizer_E = optim.Adam(encoder.parameters(), lr=c_lr)
-optimizer_D_latent = optim.Adam(cla_latent.parameters(), lr=d_lr)
+optimizer_D_latent = optim.Adam(cla_latent.parameters(), lr=c_lr)
 
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer_E, gamma=0.95)
 

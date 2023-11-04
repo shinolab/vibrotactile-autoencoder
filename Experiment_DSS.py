@@ -2,18 +2,17 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-10-31 17:37:19
+LastEditTime: 2023-11-04 17:38:05
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
 import numpy as np
 from GlobalOptimizer import JacobianOptimizer
-from CAAE_LMT108 import model
+from CAAE_14_norm import model
 import torch
 import pickle
 import sys
 import scipy
-import matplotlib.pyplot as plt
 import librosa
 import sounddevice as sd
 import pyloudnorm as pyln
@@ -28,10 +27,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 device = torch.device("cpu")
 print(f'Selected device: {device}')
 
-FEAT_DIM = 256
-CLASS_NUM = 108
+FEAT_DIM = 128
+CLASS_NUM = 14
 
-def denormalize(img):
+def img_denormalize(img):
     # Min of original data: -80
     # Max of original data: 0
     origin_max = 0.
@@ -40,9 +39,18 @@ def denormalize(img):
     denormalized_img = img * (origin_max - origin_min) + origin_min
     return denormalized_img
 
+def z_denormalize(z):
+    # range of real latent space: [-7.24, 6.42]
+    origin_max = 6.42
+    origin_min = -7.24
+    z = (z + 1) / 2
+    denormalized_z = z * (origin_max - origin_min) + origin_min
+    return denormalized_z
+
 def myFunc(decoder, zs):
+    zs = z_denormalize(zs)
     zs = torch.tensor(zs).to(torch.float32).to(device)
-    output = denormalize(decoder(zs)).reshape(zs.shape[0], -1)
+    output = img_denormalize(decoder(zs)).reshape(zs.shape[0], -1)
     # output = decoder(zs).reshape(zs.shape[0], -1)
     return output
 
@@ -51,6 +59,7 @@ def myGoodness(target, xs):
     return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).cpu().detach().numpy() ** 2, axis=1) ** 0.5
 
 def myJacobian(model, z):
+    z = z_denormalize(z)
     z = torch.tensor(z).to(torch.float32).to(device)
     return model.calc_model_gradient(z, device)
 
@@ -85,11 +94,11 @@ class HeatmapWindow(QMainWindow):
         self.setWindowTitle("Vibration Optimizer")
         self.setGeometry(100, 100, 200, 400)
 
-        model_name = 'CAAE_LMT108'
-        self.decoder = model.Generator(feat_dim=FEAT_DIM, class_dim=CLASS_NUM)
+        model_name = 'CAAE_14_norm'
+        self.decoder = model.Generator(feat_dim=FEAT_DIM)
 
         # Model initialization and parameter loading
-        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd_gamma5.pt', map_location=torch.device('cpu'))
+        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
         decoder_dict = {k: v for k, v in decoder_dict.items()}
         self.decoder.load_state_dict(decoder_dict)
 
@@ -108,24 +117,22 @@ class HeatmapWindow(QMainWindow):
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = getSliderLength(FEAT_DIM+CLASS_NUM, 1, 0.2)
-        target_latent = np.random.uniform(-1, 1, FEAT_DIM+CLASS_NUM)
+        slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
+        target_latent = np.random.uniform(-1, 1, FEAT_DIM)
         target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
 
         while True:
-            random_A = getRandomAMatrix(FEAT_DIM+CLASS_NUM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
+            random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
             if random_A is not None:
                 break
         # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
         
         # initialize the conditional part
-        init_z_class = np.zeros(CLASS_NUM)
-        init_z_noise = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM))
-        init_z = np.append(init_z_noise, init_z_class)
+        init_z = np.random.uniform(low=-1, high=1, size=(FEAT_DIM))
         init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
         init_z = np.matmul(random_A, init_low_z)
 
-        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM+CLASS_NUM, 48*320, 
+        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
                       lambda zs: myFunc(self.decoder, zs), 
                       lambda xs: myGoodness(target_data, xs), 
                       slider_length, 

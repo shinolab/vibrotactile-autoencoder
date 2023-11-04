@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-03 13:20:20
+LastEditTime: 2023-11-04 17:52:36
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -24,9 +24,8 @@ device = torch.device("mps")
 print(f'Selected device: {device}')
 
 FEAT_DIM = 128
-CLASS_NUM = 9
 
-def denormalize(img):
+def img_denormalize(img):
     # Min of original data: -80
     # Max of original data: 0
     origin_max = 0.
@@ -35,9 +34,18 @@ def denormalize(img):
     denormalized_img = img * (origin_max - origin_min) + origin_min
     return denormalized_img
 
+def z_denormalize(z):
+    # range of real latent space: [-7.24, 6.42]
+    origin_max = 6.42
+    origin_min = -7.24
+    z = (z + 1) / 2
+    denormalized_z = z * (origin_max - origin_min) + origin_min
+    return denormalized_z
+
 def myFunc(decoder, zs):
+    zs = z_denormalize(zs)
     zs = torch.tensor(zs).to(torch.float32).to(device)
-    output = denormalize(decoder(zs)).reshape(zs.shape[0], -1)
+    output = img_denormalize(decoder(zs)).reshape(zs.shape[0], -1)
     # output = decoder(zs).reshape(zs.shape[0], -1)
     return output
 
@@ -46,6 +54,7 @@ def myGoodness(target, xs):
     return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).cpu().detach().numpy() ** 2, axis=1) ** 0.5
 
 def myJacobian(model, z):
+    z = z_denormalize(z)
     z = torch.tensor(z).to(torch.float32).to(device)
     return model.calc_model_gradient(z, device)
 
@@ -101,7 +110,7 @@ class HeatmapWindow(QMainWindow):
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
         slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
-        target_latent = np.random.uniform(-1, 1, FEAT_DIM)
+        target_latent = np.random.uniform(low=-1, high=1, size=(FEAT_DIM))
         target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
         # target_data = decoder(target_latent.reshape(1, -1))[0]
 
@@ -112,7 +121,7 @@ class HeatmapWindow(QMainWindow):
         # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
 
         init_z = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
-        # init_z = np.random.normal(loc=0.0, scale=1.0, size=(FEAT_DIM))
+        # init_z = np.random.normal(loc=0.0, scale=0.5, size=(FEAT_DIM))
         init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
         init_z = np.matmul(random_A, init_low_z)
 
@@ -178,9 +187,16 @@ class HeatmapWindow(QMainWindow):
 
         z = self.optimizer.get_z(t)
 
+        print(z.min())
+        print(z.max())
+        print(z.mean())
+        print(z.std())
+
         x = self.optimizer.f(z.reshape(1, -1))[0]
         spec = x.cpu().detach().numpy().reshape(48, 320)
         score = self.optimizer.g(x.reshape(1, -1))[0]
+
+        print('mean: ', z.mean(), ' std: ', z.std())
 
         print(score)
 
