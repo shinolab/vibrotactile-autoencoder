@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-03 03:28:13
+LastEditTime: 2023-11-06 01:45:09
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -36,19 +36,19 @@ class ResNetEncoder(nn.Module):
 
 
 class LatentClassifier(nn.Module):
-    def __init__(self, feat_dim, class_dim):
+    def __init__(self, feat_dim):
         super(LatentClassifier, self).__init__()
 
         self.fc1 = nn.Linear(feat_dim, 256)
         self.fc2 = nn.Linear(256, 128)
-        self.fc_c = nn.Linear(128, class_dim)
+        self.fc_d = nn.Linear(128, 1)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        out_c = self.fc_c(x)
-        out_c = F.softmax(out_c, dim=1)
-        return out_c
+        out_d = self.fc_d(x)
+        out_d = F.sigmoid(out_d)
+        return out_d
 
 
 class _Residual_Block(nn.Module):

@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-03 03:17:31
+LastEditTime: 2023-11-06 01:50:07
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -77,23 +77,19 @@ FEAT_DIM = 128
 CLASS_NUM = 14
 encoder = model.ResNetEncoder(feat_dim = FEAT_DIM)
 generator= model.Generator(feat_dim = FEAT_DIM)
-cla_latent = model.LatentClassifier(feat_dim = FEAT_DIM, class_dim = CLASS_NUM)
+cla_latent = model.LatentClassifier(feat_dim = FEAT_DIM)
 dis_spec = model.SpectrogramDiscriminator(class_dim = CLASS_NUM)
 
 gen_lr = 2e-4
-d_spec_lr = 2e-4
+d_lr = 2e-4
 c_lr = 1e-3
 
-params_classifier = [
-    {'params': encoder.parameters()},
-    {'params': cla_latent.parameters()}
-]
-
 optimizer_G = optim.Adam(generator.parameters(), lr=gen_lr)
-optimizer_D_spec = optim.Adam(dis_spec.parameters(), lr=d_spec_lr)
-optimizer_C = optim.Adam(params_classifier, lr=c_lr)
+optimizer_D_spec = optim.Adam(dis_spec.parameters(), lr=d_lr)
+optimizer_E = optim.Adam(encoder.parameters(), lr=c_lr)
+optimizer_D_latent = optim.Adam(cla_latent.parameters(), lr=c_lr)
 
-scheduler = optim.lr_scheduler.ExponentialLR(optimizer_C, gamma=0.95)
+scheduler = optim.lr_scheduler.ExponentialLR(optimizer_E, gamma=0.95)
 
 encoder.to(device)
 cla_latent.to(device)
@@ -111,9 +107,6 @@ for epoch in range(1, epoch_num + 1):
     cla_latent.train()
     generator.train()
     dis_spec.train()
-
-    correct = torch.zeros(1).squeeze().cuda()
-    total = torch.zeros(1).squeeze().cuda()
 
     for i, (img, label) in enumerate(train_dataloader):
         batch_num += 1
@@ -165,20 +158,37 @@ for epoch in range(1, epoch_num + 1):
         writer.add_scalar('Spectrogram/D_loss', d_spec_loss.item(), batch_num)
 
         # 2) latent classifier
-        optimizer_C.zero_grad()
-        z = encoder(img)
+        soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
+        soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
 
-        output_c = cla_latent(z)
+        optimizer_D_latent.zero_grad()
+        real_z = torch.autograd.Variable(torch.Tensor(np.random.normal(0, 1, (img.shape[0], FEAT_DIM)))).to(device)
+        fake_z = encoder(img)
 
-        C_loss = classifier_loss(output_c, label)
-        C_loss.backward()
-        optimizer_C.step()
+        # loss for real distribution
+        output_d = cla_latent(real_z)
+        real_loss = adversarial_loss(output_d, soft_valid)
+        # loss for fake distribution
+        output_d = cla_latent(fake_z.detach())
+        fake_loss = adversarial_loss(output_d, soft_fake)
 
-        prediction = torch.argmax(output_c, 1)
-        correct += (prediction == torch.argmax(label, 1)).sum().float()
-        total += len(label)
+        d_latent_loss = (real_loss + fake_loss) / 2
+        d_latent_loss.backward()
+        optimizer_D_latent.step()
 
-        writer.add_scalar('Latent/C_loss', C_loss.item(), batch_num)
+        writer.add_scalar('Latent/D_loss', d_latent_loss.item(), batch_num)
+
+        # 3) encoder
+        optimizer_E.zero_grad()
+        fake_z = encoder(img)
+
+        output_d = cla_latent(fake_z)
+
+        E_loss = adversarial_loss(output_d, valid)
+        E_loss.backward()
+        optimizer_E.step()
+
+        writer.add_scalar('Latent/E_loss', E_loss.item(), batch_num)
 
     toc = time.time()
 
@@ -198,8 +208,7 @@ for epoch in range(1, epoch_num + 1):
     print('=====================================================================')
     print('Epoch: ', epoch, '\tAccumulated time: ', round((toc - tic) / 3600, 4), ' hours')
     print('Generator Loss: ', round(g_loss.item(), 4), '\tSpec Discriminator Loss: ', round(d_spec_loss.item(), 4))
-    print('Classification Loss: ', round(C_loss.item(), 4))
-    print('Accuracy: ', ((correct / total).cpu().detach().data.numpy()))
+    print('Encoder Loss: ', round(E_loss.item(), 4), '\tLatent Discriminator Loss: ', round(d_latent_loss.item(), 4))
     z_sample = z[0].cpu().detach().numpy()
     u = z_sample.mean()
     std = z_sample.std()
@@ -213,5 +222,3 @@ writer.close()
 torch.save(generator.state_dict(), 'generator_' + str(FEAT_DIM) + 'd.pt')
 torch.save(dis_spec.state_dict(), 'dis_spec_' + str(FEAT_DIM) + 'd.pt')
 torch.save(encoder.state_dict(), 'encoder_' + str(FEAT_DIM) + 'd.pt')
-
-# Training classification acc: 93.05%
