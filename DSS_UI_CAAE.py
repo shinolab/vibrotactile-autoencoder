@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-04 17:52:36
+LastEditTime: 2023-11-08 16:44:42
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -20,7 +20,7 @@ from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 
-device = torch.device("mps")
+device = torch.device("cuda")
 print(f'Selected device: {device}')
 
 FEAT_DIM = 128
@@ -91,31 +91,28 @@ class HeatmapWindow(QMainWindow):
 
         model_name = 'CAAE_14_norm'
         self.decoder = model.Generator(feat_dim=FEAT_DIM)
-
-        # Model initialization and parameter loading
-        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
-        decoder_dict = {k: v for k, v in decoder_dict.items()}
-        self.decoder.load_state_dict(decoder_dict)
-
         self.decoder.eval() 
         self.decoder.to(device)
+
+        # Model initialization and parameter loading
+        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cuda'))
+        decoder_dict = {k: v for k, v in decoder_dict.items()}
+        self.decoder.load_state_dict(decoder_dict)
 
         with open('trainset_7-class.pickle', 'rb') as file:
             trainset = pickle.load(file)
     
         index = np.random.randint(len(trainset['spectrogram']))
         self.target_spec = trainset['spectrogram'][index]
-        soundfile = trainset['filename'][index]
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
         slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
-        target_latent = np.random.uniform(low=-1, high=1, size=(FEAT_DIM))
-        target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
+        target_latent = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
         # target_data = decoder(target_latent.reshape(1, -1))[0]
 
         while True:
-            random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
+            random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
             if random_A is not None:
                 break
         # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)

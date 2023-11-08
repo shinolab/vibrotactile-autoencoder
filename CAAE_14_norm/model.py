@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-03 03:27:08
+LastEditTime: 2023-11-08 16:47:36
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -130,7 +130,7 @@ class Generator(nn.Module):
         sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.feat_dim + 1, axis=0)
         sample_latents[1:] += np.identity(self.feat_dim) * delta
 
-        sample_datas = self.forward(sample_latents.to(device))
+        sample_datas = self.forward(torch.tensor(sample_latents).to(device))
         sample_datas = sample_datas.reshape(-1, 48*320)
 
         jacobian = (sample_datas[1:] - sample_datas[0]).T / delta
