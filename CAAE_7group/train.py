@@ -2,11 +2,11 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-<<<<<<< HEAD
-LastEditTime: 2023-11-03 03:15:35
+<<<<<<< HEAD:CAAE_7group/train.py
+LastEditTime: 2023-11-13 13:12:49
 =======
-LastEditTime: 2023-11-03 22:42:24
->>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1
+LastEditTime: 2023-11-06 01:50:07
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/train.py
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -26,13 +26,13 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 print(f'Selected device: {device}')
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(current_dir, '..', 'trainset_14-class.pickle')
+file_path = os.path.join(current_dir, '..', 'trainset_7-group.pickle')
 with open(file_path, 'rb') as file:
 # with open('trainset.pickle', 'rb') as file:
     trainset = pickle.load(file)
 
 spectrogram = torch.from_numpy(trainset['spectrogram'].astype(np.float32))
-texture = trainset['texture']
+texture = trainset['group']
 le = preprocessing.LabelEncoder()
 onehot = preprocessing.OneHotEncoder()
 labels = le.fit_transform(texture)
@@ -78,22 +78,34 @@ class TVLoss(nn.Module):
 tv_loss = TVLoss()
 
 FEAT_DIM = 128
-CLASS_NUM = 14
+CLASS_NUM = 7
 encoder = model.ResNetEncoder(feat_dim = FEAT_DIM)
 generator= model.Generator(feat_dim = FEAT_DIM)
+<<<<<<< HEAD:CAAE_7group/train.py
 cla_latent = model.LatentDiscriminator(feat_dim = FEAT_DIM, class_dim = CLASS_NUM)
+=======
+cla_latent = model.LatentClassifier(feat_dim = FEAT_DIM)
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/train.py
 dis_spec = model.SpectrogramDiscriminator(class_dim = CLASS_NUM)
 
 gen_lr = 2e-4
-d_spec_lr = 2e-4
+d_lr = 2e-4
 c_lr = 1e-3
 
 optimizer_G = optim.Adam(generator.parameters(), lr=gen_lr)
+<<<<<<< HEAD:CAAE_7group/train.py
 optimizer_D_spec = optim.Adam(dis_spec.parameters(), lr=d_spec_lr)
 optimizer_E = optim.Adam(encoder.parameters(), lr=c_lr)
 optimizer_D_latent = optim.Adam(cla_latent.parameters(), lr=c_lr)
 
 scheduler = optim.lr_scheduler.ExponentialLR(optimizer_D_latent, gamma=0.95)
+=======
+optimizer_D_spec = optim.Adam(dis_spec.parameters(), lr=d_lr)
+optimizer_E = optim.Adam(encoder.parameters(), lr=c_lr)
+optimizer_D_latent = optim.Adam(cla_latent.parameters(), lr=c_lr)
+
+scheduler = optim.lr_scheduler.ExponentialLR(optimizer_E, gamma=0.95)
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/train.py
 
 encoder.to(device)
 cla_latent.to(device)
@@ -111,9 +123,6 @@ for epoch in range(1, epoch_num + 1):
     cla_latent.train()
     generator.train()
     dis_spec.train()
-
-    correct = torch.zeros(1).squeeze().cuda()
-    total = torch.zeros(1).squeeze().cuda()
 
     for i, (img, label) in enumerate(train_dataloader):
         batch_num += 1
@@ -164,7 +173,11 @@ for epoch in range(1, epoch_num + 1):
 
         writer.add_scalar('Spectrogram/D_loss', d_spec_loss.item(), batch_num)
 
+<<<<<<< HEAD:CAAE_7group/train.py
         # 2) latent discriminator
+=======
+        # 2) latent classifier
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/train.py
         soft_valid = valid - torch.rand(img.size(0), 1).to(device) * soft_scale
         soft_fake = fake + torch.rand(img.size(0), 1).to(device) * soft_scale
 
@@ -173,6 +186,7 @@ for epoch in range(1, epoch_num + 1):
         fake_z = encoder(img)
 
         # loss for real distribution
+<<<<<<< HEAD:CAAE_7group/train.py
         output_d, output_c = cla_latent(real_z)
         real_loss = adversarial_loss(output_d, soft_valid)
         # loss for fake distribution
@@ -194,11 +208,33 @@ for epoch in range(1, epoch_num + 1):
         E_loss = (adversarial_loss(output_d, valid) + classifier_loss(output_c, label)) / 2
         E_loss.backward()
         optimizer_E.step()
+=======
+        output_d = cla_latent(real_z)
+        real_loss = adversarial_loss(output_d, soft_valid)
+        # loss for fake distribution
+        output_d = cla_latent(fake_z.detach())
+        fake_loss = adversarial_loss(output_d, soft_fake)
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/train.py
 
-        prediction = torch.argmax(output_c, 1)
-        correct += (prediction == torch.argmax(label, 1)).sum().float()
-        total += len(label)
+        d_latent_loss = (real_loss + fake_loss) / 2
+        d_latent_loss.backward()
+        optimizer_D_latent.step()
 
+<<<<<<< HEAD:CAAE_7group/train.py
+=======
+        writer.add_scalar('Latent/D_loss', d_latent_loss.item(), batch_num)
+
+        # 3) encoder
+        optimizer_E.zero_grad()
+        fake_z = encoder(img)
+
+        output_d = cla_latent(fake_z)
+
+        E_loss = adversarial_loss(output_d, valid)
+        E_loss.backward()
+        optimizer_E.step()
+
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/train.py
         writer.add_scalar('Latent/E_loss', E_loss.item(), batch_num)
 
     toc = time.time()
@@ -220,7 +256,10 @@ for epoch in range(1, epoch_num + 1):
     print('Epoch: ', epoch, '\tAccumulated time: ', round((toc - tic) / 3600, 4), ' hours')
     print('Generator Loss: ', round(g_loss.item(), 4), '\tSpec Discriminator Loss: ', round(d_spec_loss.item(), 4))
     print('Encoder Loss: ', round(E_loss.item(), 4), '\tLatent Discriminator Loss: ', round(d_latent_loss.item(), 4))
+<<<<<<< HEAD:CAAE_7group/train.py
     print('Accuracy: ', ((correct / total).cpu().detach().data.numpy()))
+=======
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/train.py
     z_sample = z[0].cpu().detach().numpy()
     u = z_sample.mean()
     std = z_sample.std()
@@ -233,4 +272,8 @@ writer.close()
 
 torch.save(generator.state_dict(), 'generator_' + str(FEAT_DIM) + 'd.pt')
 torch.save(dis_spec.state_dict(), 'dis_spec_' + str(FEAT_DIM) + 'd.pt')
+<<<<<<< HEAD:CAAE_7group/train.py
 torch.save(encoder.state_dict(), 'encoder_' + str(FEAT_DIM) + 'd.pt')
+=======
+torch.save(encoder.state_dict(), 'encoder_' + str(FEAT_DIM) + 'd.pt')
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/train.py

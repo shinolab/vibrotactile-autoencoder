@@ -2,11 +2,11 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-<<<<<<< HEAD
+<<<<<<< HEAD:CAAE_7group/model.py
 LastEditTime: 2023-11-03 03:12:11
 =======
-LastEditTime: 2023-11-08 16:47:36
->>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1
+LastEditTime: 2023-11-06 01:45:09
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/model.py
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -39,6 +39,7 @@ class ResNetEncoder(nn.Module):
         return x
 
 
+<<<<<<< HEAD:CAAE_7group/model.py
 class LatentDiscriminator(nn.Module):
     def __init__(self, feat_dim, class_dim):
         super(LatentDiscriminator, self).__init__()
@@ -48,15 +49,30 @@ class LatentDiscriminator(nn.Module):
         self.fc_c = nn.Linear(128, class_dim)
         self.fc_d = nn.Linear(128, 1)
         self.softmax = nn.Softmax(dim=1)
+=======
+class LatentClassifier(nn.Module):
+    def __init__(self, feat_dim):
+        super(LatentClassifier, self).__init__()
+
+        self.fc1 = nn.Linear(feat_dim, 256)
+        self.fc2 = nn.Linear(256, 128)
+        self.fc_d = nn.Linear(128, 1)
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/model.py
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
+<<<<<<< HEAD:CAAE_7group/model.py
         out_c = self.fc_c(x)
         out_c = self.softmax(out_c)
         out_d = self.fc_d(x)
         out_d = F.sigmoid(out_d)
         return out_d, out_c
+=======
+        out_d = self.fc_d(x)
+        out_d = F.sigmoid(out_d)
+        return out_d
+>>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1:CAAE_14class/model.py
 
 
 class _Residual_Block(nn.Module):
@@ -137,7 +153,7 @@ class Generator(nn.Module):
         sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.feat_dim + 1, axis=0)
         sample_latents[1:] += np.identity(self.feat_dim) * delta
 
-        sample_datas = self.forward(torch.tensor(sample_latents).to(device))
+        sample_datas = self.forward(sample_latents.to(device))
         sample_datas = sample_datas.reshape(-1, 48*320)
 
         jacobian = (sample_datas[1:] - sample_datas[0]).T / delta
