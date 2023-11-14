@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-14 15:36:49
+LastEditTime: 2023-11-14 16:19:29
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -14,6 +14,7 @@ import pickle
 import sys
 import scipy
 import librosa
+import torchaudio
 import sounddevice as sd
 import pyloudnorm as pyln
 import time
@@ -111,6 +112,9 @@ class HeatmapWindow(QMainWindow):
 
         self.decoder.eval() 
         self.decoder.to(device)
+
+        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=100, hop_length=int(2048 * 0.1))
+        self.griffinlim = self.griffinlim.to(device)
 
         with open('trainset_7-class.pickle', 'rb') as file:
             trainset = pickle.load(file)
@@ -226,11 +230,11 @@ class HeatmapWindow(QMainWindow):
 
         spec = librosa.db_to_amplitude(spec)
         tic = time.time()
-        re_wav = librosa.griffinlim(spec,n_iter=100, n_fft=2048, hop_length=int(2048 * 0.1), window='hann')
+        re_wav = self.griffinlim(torch.tensor(spec).to(device))
         toc = time.time()
         print('griffinlim: ', toc - tic)
 
-        return re_wav
+        return re_wav.cpu().detach().numpy()
 
     def playRealVib(self):
         play_wav = pyln.normalize.loudness(self.target_wav, self.target_loudness, NORMALIZED_DB)
