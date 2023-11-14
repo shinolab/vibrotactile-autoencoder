@@ -2,11 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:44:36
 LastEditors: Mingxin Zhang
-<<<<<<< HEAD
-LastEditTime: 2023-11-03 03:15:35
-=======
-LastEditTime: 2023-11-03 22:42:24
->>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1
+LastEditTime: 2023-11-14 14:53:31
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 

@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
 Date: 2023-04-12 01:41:18
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-06-23 13:18:05
+LastEditTime: 2023-11-14 15:07:21
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -30,7 +30,7 @@ class Generator(nn.Module):
         x = self.unflatten(x)
         x = F.relu(self.bn1(self.deconv1(x)))
         x = F.relu(self.bn2(self.deconv2(x)))
-        x = F.tanh(self.deconv3(x))
+        x = torch.tanh(self.deconv3(x))
         return x
     
     def calc_model_gradient(self, latent_vector):

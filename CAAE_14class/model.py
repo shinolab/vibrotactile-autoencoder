@@ -2,11 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-28 03:41:24
 LastEditors: Mingxin Zhang
-<<<<<<< HEAD
-LastEditTime: 2023-11-03 03:12:11
-=======
-LastEditTime: 2023-11-08 16:47:36
->>>>>>> 8017fe5ed3603a04b7d8ee8fb91ba5e29b5fdab1
+LastEditTime: 2023-11-14 15:07:42
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 
@@ -126,7 +122,7 @@ class Generator(nn.Module):
         out = self.bn_mid(self.conv_mid(out))
         out = torch.add(out,residual)
         out = self.upscale4x(out)
-        out = F.tanh(self.conv_output(out))
+        out = torch.tanh(self.conv_output(out))
         return out
     
     def calc_model_gradient(self, latent_vector, device):

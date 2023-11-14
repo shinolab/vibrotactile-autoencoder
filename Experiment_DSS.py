@@ -2,13 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-04 17:38:05
+LastEditTime: 2023-11-14 15:36:49
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
 import numpy as np
 from GlobalOptimizer import JacobianOptimizer
-from CAAE_14_norm import model
+from CAAE_14class import model
 import torch
 import pickle
 import sys
@@ -16,6 +16,7 @@ import scipy
 import librosa
 import sounddevice as sd
 import pyloudnorm as pyln
+import time
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, 
                              QWidget, QSlider, QPushButton, QLabel, QFrame)
 from PyQt5.QtGui import QMovie
@@ -24,11 +25,13 @@ from PyQt5 import QtCore, QtGui
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 
-device = torch.device("cpu")
+device = torch.device("cuda")
 print(f'Selected device: {device}')
 
 FEAT_DIM = 128
 CLASS_NUM = 14
+
+NORMALIZED_DB = -60.
 
 def img_denormalize(img):
     # Min of original data: -80
@@ -61,7 +64,11 @@ def myGoodness(target, xs):
 def myJacobian(model, z):
     z = z_denormalize(z)
     z = torch.tensor(z).to(torch.float32).to(device)
-    return model.calc_model_gradient(z, device)
+    tic = time.time()
+    output = model.calc_model_gradient(z, device)
+    toc = time.time()
+    print('Jacobian: ', toc-tic)
+    return output
 
 def getSliderLength(n, boundary_range, ratio, sample_num=1000):
     samples = np.random.uniform(low=-boundary_range, high=boundary_range, size=(sample_num, 2, n))
@@ -94,11 +101,11 @@ class HeatmapWindow(QMainWindow):
         self.setWindowTitle("Vibration Optimizer")
         self.setGeometry(100, 100, 200, 400)
 
-        model_name = 'CAAE_14_norm'
+        model_name = 'CAAE_14class'
         self.decoder = model.Generator(feat_dim=FEAT_DIM)
 
         # Model initialization and parameter loading
-        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cpu'))
+        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cuda'))
         decoder_dict = {k: v for k, v in decoder_dict.items()}
         self.decoder.load_state_dict(decoder_dict)
 
@@ -117,8 +124,8 @@ class HeatmapWindow(QMainWindow):
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
-        target_latent = np.random.uniform(-1, 1, FEAT_DIM)
+        slider_length = getSliderLength(FEAT_DIM, 1, 0.8)
+        target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
         target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
 
         while True:
@@ -127,8 +134,8 @@ class HeatmapWindow(QMainWindow):
                 break
         # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
         
-        # initialize the conditional part
-        init_z = np.random.uniform(low=-1, high=1, size=(FEAT_DIM))
+        # initialize the latent
+        init_z = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
         init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
         init_z = np.matmul(random_A, init_low_z)
 
@@ -218,12 +225,15 @@ class HeatmapWindow(QMainWindow):
         spec = np.append(spec, ex, axis=0)
 
         spec = librosa.db_to_amplitude(spec)
+        tic = time.time()
         re_wav = librosa.griffinlim(spec,n_iter=100, n_fft=2048, hop_length=int(2048 * 0.1), window='hann')
+        toc = time.time()
+        print('griffinlim: ', toc - tic)
 
         return re_wav
 
     def playRealVib(self):
-        play_wav = pyln.normalize.loudness(self.target_wav, self.target_loudness, -12.)
+        play_wav = pyln.normalize.loudness(self.target_wav, self.target_loudness, NORMALIZED_DB)
 
         play_wav = np.tile(play_wav, 10)
         sd.play(play_wav, samplerate=44100)
@@ -238,8 +248,11 @@ class HeatmapWindow(QMainWindow):
         t = slider_value / 999
 
         if _update_optimizer_flag:
+            tic = time.time()
             self.optimizer.update(t)
-            print('Next')
+            toc = time.time()
+            print('Update total: ', toc-tic)
+            # print('Next')
 
         z = self.optimizer.get_z(t)
 
@@ -252,7 +265,7 @@ class HeatmapWindow(QMainWindow):
         loudness = meter.integrated_loudness(re_wav)
 
         # loudness normalize audio to target
-        loudness_normalized_audio = pyln.normalize.loudness(re_wav, loudness, -12.)
+        loudness_normalized_audio = pyln.normalize.loudness(re_wav, loudness, NORMALIZED_DB)
 
         self.re_wav = np.tile(loudness_normalized_audio, 10)
         sd.play(self.re_wav)

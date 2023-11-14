@@ -2,13 +2,13 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-08 16:44:42
+LastEditTime: 2023-11-14 14:59:15
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
 import numpy as np
 from GlobalOptimizer import JacobianOptimizer
-from CAAE_14_norm import model
+from CAAE_14class import model
 import torch
 import pickle
 import sys
@@ -89,7 +89,7 @@ class HeatmapWindow(QMainWindow):
         self.setWindowTitle("Heatmap with Slider")
         self.setGeometry(100, 100, 400, 300)
 
-        model_name = 'CAAE_14_norm'
+        model_name = 'CAAE_14class'
         self.decoder = model.Generator(feat_dim=FEAT_DIM)
         self.decoder.eval() 
         self.decoder.to(device)
@@ -107,7 +107,7 @@ class HeatmapWindow(QMainWindow):
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = getSliderLength(FEAT_DIM, 1, 0.2)
+        slider_length = getSliderLength(FEAT_DIM, 1, 0.5)
         target_latent = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
         # target_data = decoder(target_latent.reshape(1, -1))[0]
 
