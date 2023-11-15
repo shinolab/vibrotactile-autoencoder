@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-14 16:19:29
+LastEditTime: 2023-11-16 01:55:31
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -113,7 +113,7 @@ class HeatmapWindow(QMainWindow):
         self.decoder.eval() 
         self.decoder.to(device)
 
-        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=100, hop_length=int(2048 * 0.1))
+        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=100, hop_length=int(2048 * 0.1), power=1.0)
         self.griffinlim = self.griffinlim.to(device)
 
         with open('trainset_7-class.pickle', 'rb') as file:
