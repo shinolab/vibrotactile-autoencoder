@@ -9,6 +9,7 @@ DSS_results
 DL-gpu
 feat_dict
 figure
+encoder*
 *Dataset
 *.pickle
 *.png

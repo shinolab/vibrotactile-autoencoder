@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-14 14:59:15
+LastEditTime: 2023-11-16 16:04:50
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -15,6 +15,7 @@ import sys
 import matplotlib.pyplot as plt
 import librosa
 import sounddevice as sd
+import torchaudio
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QSlider, QPushButton, QLabel
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -99,6 +100,9 @@ class HeatmapWindow(QMainWindow):
         decoder_dict = {k: v for k, v in decoder_dict.items()}
         self.decoder.load_state_dict(decoder_dict)
 
+        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=80, hop_length=int(2048 * 0.1), power=1.0)
+        self.griffinlim = self.griffinlim.to(device)
+
         with open('trainset_7-class.pickle', 'rb') as file:
             trainset = pickle.load(file)
     
@@ -153,8 +157,8 @@ class HeatmapWindow(QMainWindow):
 
         # 创建滑块并设置范围和初始值
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(1, 1000)
-        self.slider.setValue(500)
+        self.slider.setRange(1, 100)
+        self.slider.setValue(50)
         layout.addWidget(self.slider)
 
         next_button = QPushButton("Next")
@@ -176,7 +180,7 @@ class HeatmapWindow(QMainWindow):
     def updateValues(self, _update_optimizer_flag):
         # 获取滑块的值
         slider_value = self.slider.value()
-        t = slider_value / 999
+        t = slider_value / 99
 
         if _update_optimizer_flag:
             self.optimizer.update(t)
@@ -208,7 +212,7 @@ class HeatmapWindow(QMainWindow):
         spec = np.append(spec, ex, axis=0)
 
         spec = librosa.db_to_amplitude(spec)
-        re_wav = librosa.griffinlim(spec,n_iter=5, n_fft=2048, hop_length=int(2048 * 0.1), window='hann')
+        re_wav = self.griffinlim(torch.tensor(spec).to(device)).cpu().detach().numpy()
         sd.play(np.tile(20*re_wav, 10))
 
 

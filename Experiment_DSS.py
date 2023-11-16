@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-16 01:55:31
+LastEditTime: 2023-11-16 16:37:44
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -113,7 +113,7 @@ class HeatmapWindow(QMainWindow):
         self.decoder.eval() 
         self.decoder.to(device)
 
-        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=100, hop_length=int(2048 * 0.1), power=1.0)
+        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=50, hop_length=int(2048 * 0.1), power=1.0)
         self.griffinlim = self.griffinlim.to(device)
 
         with open('trainset_7-class.pickle', 'rb') as file:
@@ -128,7 +128,7 @@ class HeatmapWindow(QMainWindow):
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = getSliderLength(FEAT_DIM, 1, 0.8)
+        slider_length = getSliderLength(FEAT_DIM, 1, 0.5)
         target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
         target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
 
@@ -176,10 +176,10 @@ class HeatmapWindow(QMainWindow):
         play_stop_button.clicked.connect(self.playRealVib)
         real_vib_layout.addWidget(play_stop_button, 1, Qt.AlignCenter | Qt.AlignCenter)
 
-        self.wav_gif = QMovie('UI/giphy.gif')
+        self.wav_gif = QMovie('UI/ezgif-2-ea9f643ae8.gif')
 
         self.wav_gif = QMovie()
-        self.wav_gif.setFileName('UI/giphy.gif')
+        self.wav_gif.setFileName('UI/ezgif-2-ea9f643ae8.gif')
         self.wav_gif.jumpToFrame(0)
 
         self.gif_label = QLabel()
@@ -200,8 +200,8 @@ class HeatmapWindow(QMainWindow):
         layout.addWidget(QLabel('Select the slider position of\
                                 \nthe best matching vibration'), 1, Qt.AlignCenter | Qt.AlignTop)
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(1, 1000)
-        self.slider.setValue(500)
+        self.slider.setRange(1, 100)
+        self.slider.setValue(50)
         layout.addWidget(self.slider)
 
         next_save_button = QHBoxLayout()
@@ -249,7 +249,7 @@ class HeatmapWindow(QMainWindow):
     def updateValues(self, _update_optimizer_flag):
         # 获取滑块的值
         slider_value = self.slider.value()
-        t = slider_value / 999
+        t = slider_value / 99
 
         if _update_optimizer_flag:
             tic = time.time()
