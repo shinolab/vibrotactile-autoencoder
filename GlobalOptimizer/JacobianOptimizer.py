@@ -2,11 +2,9 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-20 21:02:34
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-22 14:29:22
+LastEditTime: 2023-11-22 15:45:32
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
-import sys, os
-import time
 import torch
 
 from .GlobalOptimizer import GlobalOptimizer
@@ -31,11 +29,8 @@ class JacobianOptimizer(GlobalOptimizer):
 
     def update_jacobian(self, z):
         self.jacobian = self.jacobian_func(z)
-        tic = time.time()
         # u, s, vh = np.linalg.svd(self.jacobian.cpu().detach(), full_matrices=True)
         u, s, vh = torch.linalg.svd(self.jacobian.detach(), full_matrices=True)
-        toc = time.time()
-        print('SVD: ', toc-tic)
 
         s = s.cpu().detach().numpy()
         vh = vh.cpu().detach().numpy()
