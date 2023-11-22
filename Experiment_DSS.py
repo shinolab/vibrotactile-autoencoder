@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-22 16:05:26
+LastEditTime: 2023-11-22 16:24:09
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -59,7 +59,7 @@ def myFunc(decoder, zs):
     return output
 
 def myGoodness(target, xs):
-    xs = torch.tensor(xs).to(torch.float32).to(device)
+    xs = xs.to(torch.float32).to(device)
     return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).cpu().detach().numpy() ** 2, axis=1) ** 0.5
 
 def myJacobian(model, z):
@@ -126,7 +126,7 @@ class HeatmapWindow(QMainWindow):
         # b, a = signal.butter(3, [20 / self.sr, 1000 / self.sr], 'bandpass')
         # self.target_wav = signal.filtfilt(b, a, data)
 
-        with open('trainset_7-class.pickle', 'rb') as file:
+        with open('testset_7-class.pickle', 'rb') as file:
             testset = pickle.load(file)
     
         index = np.random.randint(len(testset['spectrogram']))
@@ -217,7 +217,7 @@ class HeatmapWindow(QMainWindow):
     def initOptimizer(self):
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = getSliderLength(FEAT_DIM, 1, 0.8)
+        slider_length = getSliderLength(FEAT_DIM, 1, 1.0)
         target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
         target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
 

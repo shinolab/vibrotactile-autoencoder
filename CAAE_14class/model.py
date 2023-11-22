@@ -133,7 +133,7 @@ class Generator(nn.Module):
         sample_latents = np.repeat(latent_vector.reshape(1, -1).cpu(), repeats=self.feat_dim + 1, axis=0)
         sample_latents[1:] += np.identity(self.feat_dim) * delta
 
-        sample_datas = self.forward(torch.tensor(sample_latents).to(device))
+        sample_datas = self.forward(sample_latents.to(device))
         sample_datas = sample_datas.reshape(-1, 48*320)
 
         jacobian = (sample_datas[1:] - sample_datas[0]).T / delta

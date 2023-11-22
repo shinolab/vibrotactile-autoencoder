@@ -58,7 +58,7 @@ class JacobianOptimizer(GlobalOptimizer):
     def update(self, t):
         self.current_z = self.get_z(t)
         self.current_x = self.f(self.current_z.reshape(1, -1))[0]
-        # self.current_score = self.g(self.current_x.reshape(1, -1))[0]
+        self.current_score = self.g(self.current_x.reshape(1, -1))[0]
 
         if np.abs(t - 0.5) > self.center_tolerance:
             self.update_jacobian(self.current_z)
