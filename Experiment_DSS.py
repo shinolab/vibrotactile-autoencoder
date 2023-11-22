@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-22 15:59:53
+LastEditTime: 2023-11-22 16:05:26
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -127,10 +127,11 @@ class HeatmapWindow(QMainWindow):
         # self.target_wav = signal.filtfilt(b, a, data)
 
         with open('trainset_7-class.pickle', 'rb') as file:
-            trainset = pickle.load(file)
+            testset = pickle.load(file)
     
-        index = np.random.randint(len(trainset['spectrogram']))
-        self.target_spec = trainset['spectrogram'][index]
+        index = np.random.randint(len(testset['spectrogram']))
+        self.target_spec = testset['spectrogram'][index]
+        print(testset['filename'][index])
 
         self.target_wav = self.spec2wav(self.target_spec)
         meter = pyln.Meter(44100) # create BS.1770 meter
