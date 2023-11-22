@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-22 15:41:03
+LastEditTime: 2023-11-22 15:59:53
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -136,33 +136,7 @@ class HeatmapWindow(QMainWindow):
         meter = pyln.Meter(44100) # create BS.1770 meter
         self.target_loudness = meter.integrated_loudness(self.target_wav)
 
-        target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
-
-        slider_length = getSliderLength(FEAT_DIM, 1, 0.8)
-        target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
-        target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
-
-        while True:
-            random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
-            if random_A is not None:
-                break
-        # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
-        
-        # initialize the latent
-        init_z = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
-        init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
-        init_z = np.matmul(random_A, init_low_z)
-
-        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
-                      lambda zs: myFunc(self.decoder, zs), 
-                      lambda xs: myGoodness(target_data, xs), 
-                      slider_length, 
-                      lambda z: myJacobian(self.decoder, z), 
-                      maximizer=False)
-
-        self.optimizer.init(init_z)
-        self.best_score = self.optimizer.current_score
-
+        self.initOptimizer()
         self.initUI()
 
     def initUI(self):
@@ -228,12 +202,45 @@ class HeatmapWindow(QMainWindow):
 
         layout.addLayout(next_save_button)
 
+        layout.addWidget(QLabel('Click \'Reset\' to restart the optimization'), 1, Qt.AlignCenter | Qt.AlignBottom)
+        reset_button = QPushButton("Reset")
+        reset_button.clicked.connect(self.restart)
+        layout.addWidget(reset_button)
+
         # 连接滑块的valueChanged信号到更新热度图的槽函数
         self.slider.valueChanged.connect(lambda value: self.updateValues(_update_optimizer_flag=False))
 
         self.updateValues(_update_optimizer_flag=False)
         sd.stop()
 
+    def initOptimizer(self):
+        target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
+
+        slider_length = getSliderLength(FEAT_DIM, 1, 0.8)
+        target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
+        target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
+
+        while True:
+            random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
+            if random_A is not None:
+                break
+        # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
+        
+        # initialize the latent
+        init_z = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
+        init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
+        init_z = np.matmul(random_A, init_low_z)
+
+        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
+                      lambda zs: myFunc(self.decoder, zs), 
+                      lambda xs: myGoodness(target_data, xs), 
+                      slider_length, 
+                      lambda z: myJacobian(self.decoder, z), 
+                      maximizer=False)
+
+        self.optimizer.init(init_z)
+        self.best_score = self.optimizer.current_score
+    
     def spec2wav(self, spec):
         ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80) #もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
         spec = np.append(spec, ex, axis=0)
@@ -255,6 +262,12 @@ class HeatmapWindow(QMainWindow):
 
     def saveWavFile(self):
         scipy.io.wavfile.write("Generated.wav", 44100, self.re_wav)
+    
+    def restart(self):
+        self.slider.setValue(50)
+        sd.stop()
+        self.initOptimizer()
+        self.wav_gif.stop()
 
     def updateValues(self, _update_optimizer_flag):
         # 获取滑块的值
