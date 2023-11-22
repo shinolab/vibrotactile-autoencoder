@@ -6,7 +6,7 @@
 *.pickle
 *.png
 *Dataset
-__pycache__
+__pycache__/
 7-group
 LMT_108_SurfaceMaterials_Database
 training_vis
