@@ -2,6 +2,11 @@
 .gitignore
 .ipynb_checkpoints
 .DS_Store
+*.pt
+*.pickle
+*.png
+*Dataset
+__pycache__
 7-group
 LMT_108_SurfaceMaterials_Database
 training_vis
@@ -9,7 +14,3 @@ DSS_results
 DL-gpu
 feat_dict
 figure
-encoder*
-*Dataset
-*.pickle
-*.png

@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-20 21:02:34
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-14 15:40:58
+LastEditTime: 2023-11-22 14:29:22
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys, os
@@ -63,7 +63,7 @@ class JacobianOptimizer(GlobalOptimizer):
     def update(self, t):
         self.current_z = self.get_z(t)
         self.current_x = self.f(self.current_z.reshape(1, -1))[0]
-        self.current_score = self.g(self.current_x.reshape(1, -1))[0]
+        # self.current_score = self.g(self.current_x.reshape(1, -1))[0]
 
         if np.abs(t - 0.5) > self.center_tolerance:
             self.update_jacobian(self.current_z)

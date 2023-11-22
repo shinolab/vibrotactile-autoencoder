@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-16 16:37:44
+LastEditTime: 2023-11-22 15:41:03
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -116,6 +116,16 @@ class HeatmapWindow(QMainWindow):
         self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=50, hop_length=int(2048 * 0.1), power=1.0)
         self.griffinlim = self.griffinlim.to(device)
 
+        # data_path = "7-class_Dataset"
+        # file_name_list = os.listdir(data_path)
+        # index = np.random.randint(0, len(file_name_list)-1)
+        # target_wav_file = data_path + '/' + file_name_list[index]
+
+        # data, self.sr = librosa.load(target_wav_file, sr=44100)
+        # print(target_wav_file)
+        # b, a = signal.butter(3, [20 / self.sr, 1000 / self.sr], 'bandpass')
+        # self.target_wav = signal.filtfilt(b, a, data)
+
         with open('trainset_7-class.pickle', 'rb') as file:
             trainset = pickle.load(file)
     
@@ -128,7 +138,7 @@ class HeatmapWindow(QMainWindow):
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = getSliderLength(FEAT_DIM, 1, 0.5)
+        slider_length = getSliderLength(FEAT_DIM, 1, 0.8)
         target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
         target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
 
@@ -237,8 +247,8 @@ class HeatmapWindow(QMainWindow):
         return re_wav.cpu().detach().numpy()
 
     def playRealVib(self):
-        play_wav = pyln.normalize.loudness(self.target_wav, self.target_loudness, NORMALIZED_DB)
-
+        # play_wav = pyln.normalize.loudness(self.target_wav, self.target_loudness, NORMALIZED_DB)
+        play_wav = self.target_wav * 100
         play_wav = np.tile(play_wav, 10)
         sd.play(play_wav, samplerate=44100)
         self.wav_gif.start()
@@ -269,7 +279,8 @@ class HeatmapWindow(QMainWindow):
         loudness = meter.integrated_loudness(re_wav)
 
         # loudness normalize audio to target
-        loudness_normalized_audio = pyln.normalize.loudness(re_wav, loudness, NORMALIZED_DB)
+        # loudness_normalized_audio = pyln.normalize.loudness(re_wav, loudness, NORMALIZED_DB)
+        loudness_normalized_audio = re_wav * 100
 
         self.re_wav = np.tile(loudness_normalized_audio, 10)
         sd.play(self.re_wav)
