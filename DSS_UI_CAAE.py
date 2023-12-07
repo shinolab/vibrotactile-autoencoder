@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-16 16:04:50
+LastEditTime: 2023-12-07 15:15:25
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -25,6 +25,7 @@ device = torch.device("cuda")
 print(f'Selected device: {device}')
 
 FEAT_DIM = 128
+SLIDER_LEN = 30
 
 def img_denormalize(img):
     # Min of original data: -80
@@ -100,10 +101,10 @@ class HeatmapWindow(QMainWindow):
         decoder_dict = {k: v for k, v in decoder_dict.items()}
         self.decoder.load_state_dict(decoder_dict)
 
-        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=80, hop_length=int(2048 * 0.1), power=1.0)
+        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=50, hop_length=int(2048 * 0.1), power=1.0)
         self.griffinlim = self.griffinlim.to(device)
 
-        with open('trainset_7-class.pickle', 'rb') as file:
+        with open('testset_7-class.pickle', 'rb') as file:
             trainset = pickle.load(file)
     
         index = np.random.randint(len(trainset['spectrogram']))
@@ -111,7 +112,7 @@ class HeatmapWindow(QMainWindow):
 
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = getSliderLength(FEAT_DIM, 1, 0.5)
+        slider_length = getSliderLength(FEAT_DIM, 1, 0.8)
         target_latent = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
         # target_data = decoder(target_latent.reshape(1, -1))[0]
 
@@ -157,8 +158,8 @@ class HeatmapWindow(QMainWindow):
 
         # 创建滑块并设置范围和初始值
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(1, 100)
-        self.slider.setValue(50)
+        self.slider.setRange(1, int(SLIDER_LEN))
+        self.slider.setValue(int(SLIDER_LEN / 2))
         layout.addWidget(self.slider)
 
         next_button = QPushButton("Next")
@@ -180,7 +181,7 @@ class HeatmapWindow(QMainWindow):
     def updateValues(self, _update_optimizer_flag):
         # 获取滑块的值
         slider_value = self.slider.value()
-        t = slider_value / 99
+        t = slider_value / (SLIDER_LEN - 1)
 
         if _update_optimizer_flag:
             self.optimizer.update(t)
@@ -213,7 +214,7 @@ class HeatmapWindow(QMainWindow):
 
         spec = librosa.db_to_amplitude(spec)
         re_wav = self.griffinlim(torch.tensor(spec).to(device)).cpu().detach().numpy()
-        sd.play(np.tile(20*re_wav, 10))
+        sd.play(np.tile(100*re_wav, 10))
 
 
 if __name__ == "__main__":

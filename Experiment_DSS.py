@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-22 16:24:09
+LastEditTime: 2023-12-07 15:26:43
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -31,6 +31,7 @@ print(f'Selected device: {device}')
 
 FEAT_DIM = 128
 CLASS_NUM = 14
+SLIDER_LEN = 30
 
 NORMALIZED_DB = -60.
 
@@ -185,8 +186,8 @@ class HeatmapWindow(QMainWindow):
         layout.addWidget(QLabel('Select the slider position of\
                                 \nthe best matching vibration'), 1, Qt.AlignCenter | Qt.AlignTop)
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(1, 100)
-        self.slider.setValue(50)
+        self.slider.setRange(1, int(SLIDER_LEN))
+        self.slider.setValue(int(SLIDER_LEN / 2))
         layout.addWidget(self.slider)
 
         next_save_button = QHBoxLayout()
@@ -265,7 +266,7 @@ class HeatmapWindow(QMainWindow):
         scipy.io.wavfile.write("Generated.wav", 44100, self.re_wav)
     
     def restart(self):
-        self.slider.setValue(50)
+        self.slider.setValue(int(SLIDER_LEN / 2))
         sd.stop()
         self.initOptimizer()
         self.wav_gif.stop()
@@ -273,7 +274,7 @@ class HeatmapWindow(QMainWindow):
     def updateValues(self, _update_optimizer_flag):
         # 获取滑块的值
         slider_value = self.slider.value()
-        t = slider_value / 99
+        t = slider_value / (SLIDER_LEN - 1)
 
         if _update_optimizer_flag:
             tic = time.time()
