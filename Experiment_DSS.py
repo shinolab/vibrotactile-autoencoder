@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-12-07 15:26:43
+LastEditTime: 2023-12-07 16:57:02
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -18,6 +18,7 @@ import torchaudio
 import sounddevice as sd
 import pyloudnorm as pyln
 import time
+import datetime
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, 
                              QWidget, QSlider, QPushButton, QLabel, QFrame)
 from PyQt5.QtGui import QMovie
@@ -133,10 +134,13 @@ class HeatmapWindow(QMainWindow):
         index = np.random.randint(len(testset['spectrogram']))
         self.target_spec = testset['spectrogram'][index]
         print(testset['filename'][index])
+        self.group = testset['filename'][index][:2]
 
         self.target_wav = self.spec2wav(self.target_spec)
-        meter = pyln.Meter(44100) # create BS.1770 meter
-        self.target_loudness = meter.integrated_loudness(self.target_wav)
+        # meter = pyln.Meter(44100) # create BS.1770 meter
+        # self.target_loudness = meter.integrated_loudness(self.target_wav)
+        self.target_wav = self.target_wav * 100
+        self.target_wav = np.tile(self.target_wav, 10)
 
         self.initOptimizer()
         self.initUI()
@@ -257,13 +261,15 @@ class HeatmapWindow(QMainWindow):
 
     def playRealVib(self):
         # play_wav = pyln.normalize.loudness(self.target_wav, self.target_loudness, NORMALIZED_DB)
-        play_wav = self.target_wav * 100
-        play_wav = np.tile(play_wav, 10)
-        sd.play(play_wav, samplerate=44100)
+        sd.play(self.target_wav, samplerate=44100)
         self.wav_gif.start()
 
     def saveWavFile(self):
-        scipy.io.wavfile.write("Generated.wav", 44100, self.re_wav)
+        file_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        real_file_name = "Generation_Results/Real/" + self.group + "_" + file_time + ".wav"
+        fake_file_name = "Generation_Results/Generated/" + self.group + "_" + file_time + ".wav"
+        scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)
+        scipy.io.wavfile.write(fake_file_name, 44100, self.re_wav)
     
     def restart(self):
         self.slider.setValue(int(SLIDER_LEN / 2))
