@@ -22,13 +22,14 @@ SLIDER_LEN = 30
 
 
 class InitWindow(QWidget):
-    def __init__(self, griffinlim, target_spec, decoder, init_z):
+    def __init__(self, griffinlim, target_spec, decoder, init_z, task):
         super().__init__()
 
         self.griffinlim = griffinlim
         self.target_spec = target_spec
         self.decoder = decoder
         self.init_z = init_z
+        self.task = task
 
         self.initUI()
  
@@ -141,10 +142,16 @@ class InitWindow(QWidget):
             init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
             init_z = np.matmul(random_A, init_low_z)
 
-            self.new_window = DSS_Visualization(self.griffinlim, 
-                                                self.target_spec, 
-                                                self.decoder, 
-                                                init_z)
+            if self.task == 'Visualization':
+                self.new_window = DSS_Visualization(self.griffinlim, 
+                                                    self.target_spec, 
+                                                    self.decoder, 
+                                                    init_z)
+            if self.task == 'Experiment':
+                self.new_window = DSS_Experiment(self.griffinlim, 
+                                                 self.target_spec, 
+                                                 self.decoder, 
+                                                 init_z)
             self.new_window.show()
             self.hide()
             return

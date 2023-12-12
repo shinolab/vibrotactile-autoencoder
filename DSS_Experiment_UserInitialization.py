@@ -56,6 +56,6 @@ if __name__ == "__main__":
                                            target_spec, 
                                            decoder, 
                                            init_z,
-                                           'Visualization')
+                                           'Experiment')
     init_window.show()
     sys.exit(app.exec_())
