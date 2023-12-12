@@ -121,9 +121,12 @@ class InitWindow(QWidget):
 
         if self.good_num >= 3:
             good_mean = np.array(self.good_list).mean(axis=0)
-            soso_mean = np.array(self.soso_list).mean(axis=0)
 
-            init_z = 0.8 * good_mean + 0.2 * soso_mean
+            if self.soso_list != []:
+                soso_mean = np.array(self.soso_list).mean(axis=0)
+                init_z = 0.8 * good_mean + 0.2 * soso_mean
+            else:
+                init_z = good_mean
 
             target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
             target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
