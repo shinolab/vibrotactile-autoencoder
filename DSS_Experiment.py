@@ -7,26 +7,14 @@ Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved.
 '''
 import sys
 import numpy as np
-from GlobalOptimizer import JacobianOptimizer
 from CAAE_14class import model
 import torch
 import pickle
 import sys
-import scipy
-import librosa
 import torchaudio
-import sounddevice as sd
-import pyloudnorm as pyln
-import time
-import datetime
 import Methods
 import UserInterface
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, 
-                             QWidget, QSlider, QPushButton, QLabel, QFrame)
-from PyQt5.QtGui import QMovie
-from PyQt5.QtCore import Qt
-from PyQt5 import QtCore, QtGui
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import QApplication
 
 
 device = torch.device("cuda")
