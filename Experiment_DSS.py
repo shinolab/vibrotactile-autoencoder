@@ -19,6 +19,8 @@ import sounddevice as sd
 import pyloudnorm as pyln
 import time
 import datetime
+import Methods
+import UserInterface
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, 
                              QWidget, QSlider, QPushButton, QLabel, QFrame)
 from PyQt5.QtGui import QMovie
@@ -34,283 +36,47 @@ FEAT_DIM = 128
 CLASS_NUM = 14
 SLIDER_LEN = 30
 
-NORMALIZED_DB = -60.
-
-def img_denormalize(img):
-    # Min of original data: -80
-    # Max of original data: 0
-    origin_max = 0.
-    origin_min = -80.
-    img = (img + 1) / 2 # from [-1, 1] back to [0, 1]
-    denormalized_img = img * (origin_max - origin_min) + origin_min
-    return denormalized_img
-
-def z_denormalize(z):
-    # range of real latent space: [-7.24, 6.42]
-    origin_max = 6.42
-    origin_min = -7.24
-    z = (z + 1) / 2
-    denormalized_z = z * (origin_max - origin_min) + origin_min
-    return denormalized_z
-
-def myFunc(decoder, zs):
-    zs = z_denormalize(zs)
-    zs = torch.tensor(zs).to(torch.float32).to(device)
-    output = img_denormalize(decoder(zs)).reshape(zs.shape[0], -1)
-    # output = decoder(zs).reshape(zs.shape[0], -1)
-    return output
-
-def myGoodness(target, xs):
-    xs = xs.to(torch.float32).to(device)
-    return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).cpu().detach().numpy() ** 2, axis=1) ** 0.5
-
-def myJacobian(model, z):
-    z = z_denormalize(z)
-    z = torch.tensor(z).to(torch.float32).to(device)
-    tic = time.time()
-    output = model.calc_model_gradient(z, device)
-    toc = time.time()
-    print('Jacobian: ', toc-tic)
-    return output
-
-def getSliderLength(n, boundary_range, ratio, sample_num=1000):
-    samples = np.random.uniform(low=-boundary_range, high=boundary_range, size=(sample_num, 2, n))
-    distances = np.linalg.norm(samples[:, 0, :] - samples[:, 1, :], axis=1)
-    average_distance = np.average(distances)
-    return ratio * average_distance
-
-def getRandomAMatrix(high_dim, dim, optimals, range):
-    A = np.random.normal(size=(high_dim, dim))
-    try:
-        invA = np.linalg.pinv(A)
-    except:
-        print("Inverse failed!")
-        return None
-
-    low_optimals = np.matmul(invA, optimals.T).T
-    conditions = (low_optimals < range) & (low_optimals > -range)
-    conditions = np.all(conditions, axis=1)
-    if np.any(conditions):
-        return A
-    else:
-        print("A matrix is not qualified. Resampling......")
-        return None
-    
-
-class HeatmapWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("Vibration Optimizer")
-        self.setGeometry(100, 100, 200, 400)
-
-        model_name = 'CAAE_14class'
-        self.decoder = model.Generator(feat_dim=FEAT_DIM)
-
-        # Model initialization and parameter loading
-        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cuda'))
-        decoder_dict = {k: v for k, v in decoder_dict.items()}
-        self.decoder.load_state_dict(decoder_dict)
-
-        self.decoder.eval() 
-        self.decoder.to(device)
-
-        self.griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=50, hop_length=int(2048 * 0.1), power=1.0)
-        self.griffinlim = self.griffinlim.to(device)
-
-        # data_path = "7-class_Dataset"
-        # file_name_list = os.listdir(data_path)
-        # index = np.random.randint(0, len(file_name_list)-1)
-        # target_wav_file = data_path + '/' + file_name_list[index]
-
-        # data, self.sr = librosa.load(target_wav_file, sr=44100)
-        # print(target_wav_file)
-        # b, a = signal.butter(3, [20 / self.sr, 1000 / self.sr], 'bandpass')
-        # self.target_wav = signal.filtfilt(b, a, data)
-
-        with open('testset_7-class.pickle', 'rb') as file:
-            testset = pickle.load(file)
-    
-        index = np.random.randint(len(testset['spectrogram']))
-        self.target_spec = testset['spectrogram'][index]
-        print(testset['filename'][index])
-        self.group = testset['filename'][index][:2]
-
-        self.target_wav = self.spec2wav(self.target_spec)
-        # meter = pyln.Meter(44100) # create BS.1770 meter
-        # self.target_loudness = meter.integrated_loudness(self.target_wav)
-        self.target_wav = self.target_wav * 100
-        self.target_wav = np.tile(self.target_wav, 10)
-
-        self.initOptimizer()
-        self.initUI()
-
-    def initUI(self):
-        main_widget = QWidget(self)
-        self.setCentralWidget(main_widget)
-
-        layout = QVBoxLayout(main_widget)
-
-        title_font = QtGui.QFont()
-        title_font.setPointSize(16)
-        title_font.setBold(True)
-
-        target_title = QLabel('Target Vibration Recording')
-        target_title.setFont(title_font)
-        layout.addWidget(target_title, 1, Qt.AlignCenter | Qt.AlignTop)
-
-        real_vib_layout = QHBoxLayout()
-        real_vib_layout.addWidget(QLabel('Click to play the vibration'), 1, Qt.AlignCenter | Qt.AlignCenter)
-
-        play_stop_button = QPushButton("Play")
-        play_stop_button.clicked.connect(self.playRealVib)
-        real_vib_layout.addWidget(play_stop_button, 1, Qt.AlignCenter | Qt.AlignCenter)
-
-        self.wav_gif = QMovie('UI/ezgif-2-ea9f643ae8.gif')
-
-        self.wav_gif = QMovie()
-        self.wav_gif.setFileName('UI/ezgif-2-ea9f643ae8.gif')
-        self.wav_gif.jumpToFrame(0)
-
-        self.gif_label = QLabel()
-        self.gif_label.setMovie(self.wav_gif)
-        self.gif_label.setMinimumSize(QtCore.QSize(180, 75))
-        self.gif_label.setMaximumSize(QtCore.QSize(180, 150))
-        self.gif_label.setScaledContents(True)
-
-        layout.addWidget(self.gif_label, 1, Qt.AlignCenter | Qt.AlignCenter)
-        layout.addLayout(real_vib_layout)
-        layout.addSpacing(18)
-
-        optimization_title = QLabel('Generated Vibration')
-        optimization_title.setFont(title_font)
-        layout.addWidget(optimization_title, 1, Qt.AlignCenter | Qt.AlignTop)
-
-        # 创建滑块并设置范围和初始值
-        layout.addWidget(QLabel('Select the slider position of\
-                                \nthe best matching vibration'), 1, Qt.AlignCenter | Qt.AlignTop)
-        self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(1, int(SLIDER_LEN))
-        self.slider.setValue(int(SLIDER_LEN / 2))
-        layout.addWidget(self.slider)
-
-        next_save_button = QHBoxLayout()
-        next_button = QPushButton("Next")
-        next_button.clicked.connect(lambda value: self.updateValues(_update_optimizer_flag=True))
-        next_save_button.addWidget(next_button)
-
-        save_button = QPushButton("Save")
-        save_button.clicked.connect(self.saveWavFile)
-        next_save_button.addWidget(save_button)
-
-        layout.addWidget(QLabel('Click \'Next\' to enter the next iteration\
-                                \nClick \'Save\' to save the current vibration'), 1, Qt.AlignCenter | Qt.AlignTop)
-
-        layout.addLayout(next_save_button)
-
-        layout.addWidget(QLabel('Click \'Reset\' to restart the optimization'), 1, Qt.AlignCenter | Qt.AlignBottom)
-        reset_button = QPushButton("Reset")
-        reset_button.clicked.connect(self.restart)
-        layout.addWidget(reset_button)
-
-        # 连接滑块的valueChanged信号到更新热度图的槽函数
-        self.slider.valueChanged.connect(lambda value: self.updateValues(_update_optimizer_flag=False))
-
-        self.updateValues(_update_optimizer_flag=False)
-        sd.stop()
-
-    def initOptimizer(self):
-        target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
-
-        slider_length = getSliderLength(FEAT_DIM, 1, 1.0)
-        target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
-        target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
-
-        while True:
-            random_A = getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
-            if random_A is not None:
-                break
-        # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
-        
-        # initialize the latent
-        init_z = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
-        init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
-        init_z = np.matmul(random_A, init_low_z)
-
-        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
-                      lambda zs: myFunc(self.decoder, zs), 
-                      lambda xs: myGoodness(target_data, xs), 
-                      slider_length, 
-                      lambda z: myJacobian(self.decoder, z), 
-                      maximizer=False)
-
-        self.optimizer.init(init_z)
-        self.best_score = self.optimizer.current_score
-    
-    def spec2wav(self, spec):
-        ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80) #もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
-        spec = np.append(spec, ex, axis=0)
-
-        spec = librosa.db_to_amplitude(spec)
-        tic = time.time()
-        re_wav = self.griffinlim(torch.tensor(spec).to(device))
-        toc = time.time()
-        print('griffinlim: ', toc - tic)
-
-        return re_wav.cpu().detach().numpy()
-
-    def playRealVib(self):
-        # play_wav = pyln.normalize.loudness(self.target_wav, self.target_loudness, NORMALIZED_DB)
-        sd.play(self.target_wav, samplerate=44100)
-        self.wav_gif.start()
-
-    def saveWavFile(self):
-        file_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        real_file_name = "Generation_Results/Real/" + self.group + "_" + file_time + ".wav"
-        fake_file_name = "Generation_Results/Generated/" + self.group + "_" + file_time + ".wav"
-        scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)
-        scipy.io.wavfile.write(fake_file_name, 44100, self.re_wav)
-    
-    def restart(self):
-        self.slider.setValue(int(SLIDER_LEN / 2))
-        sd.stop()
-        self.initOptimizer()
-        self.wav_gif.stop()
-
-    def updateValues(self, _update_optimizer_flag):
-        # 获取滑块的值
-        slider_value = self.slider.value()
-        t = slider_value / (SLIDER_LEN - 1)
-
-        if _update_optimizer_flag:
-            tic = time.time()
-            self.optimizer.update(t)
-            toc = time.time()
-            print('Update total: ', toc-tic)
-            # print('Next')
-
-        z = self.optimizer.get_z(t)
-
-        x = self.optimizer.f(z.reshape(1, -1))[0]
-        spec = x.cpu().detach().numpy().reshape(48, 320)
-
-        re_wav = self.spec2wav(spec)
-
-        meter = pyln.Meter(44100) # create BS.1770 meter
-        loudness = meter.integrated_loudness(re_wav)
-
-        # loudness normalize audio to target
-        # loudness_normalized_audio = pyln.normalize.loudness(re_wav, loudness, NORMALIZED_DB)
-        loudness_normalized_audio = re_wav * 100
-
-        self.re_wav = np.tile(loudness_normalized_audio, 10)
-        sd.play(self.re_wav)
-
-        self.wav_gif.stop()
-
 
 if __name__ == "__main__":
+    griffinlim = torchaudio.transforms.GriffinLim(n_fft=2048, n_iter=50, hop_length=int(2048 * 0.1), power=1.0)
+    griffinlim = griffinlim.to(device)
+
+    with open('testset_7-class.pickle', 'rb') as file:
+            testset = pickle.load(file)
+    
+    index = np.random.randint(len(testset['spectrogram']))
+    target_spec = testset['spectrogram'][index]
+    print(testset['filename'][index])
+    group = testset['filename'][index][:2]
+
+    model_name = 'CAAE_14class'
+    decoder = model.Generator(feat_dim=FEAT_DIM)
+    decoder.eval() 
+    decoder.to(device)
+
+    # Model initialization and parameter loading
+    decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cuda'))
+    decoder_dict = {k: v for k, v in decoder_dict.items()}
+    decoder.load_state_dict(decoder_dict)
+
+    target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
+    target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
+
+    while True:
+        random_A = Methods.getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
+        if random_A is not None:
+            break
+    # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
+
+    # initialize the latent
+    init_z = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
+    init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
+    init_z = np.matmul(random_A, init_low_z)
+
     app = QApplication(sys.argv)
-    window = HeatmapWindow()
+    window = UserInterface.DSS_Experiment(griffinlim, 
+                                          target_spec, 
+                                          decoder, 
+                                          init_z)
     window.show()
     sys.exit(app.exec_())
