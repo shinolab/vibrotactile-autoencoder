@@ -13,10 +13,14 @@ import sys
 import torchaudio
 import UserInterface
 from PyQt5.QtWidgets import QApplication
+from CAAE_14class import model
 
 
 device = torch.device("cuda")
 print(f'Selected device: {device}')
+
+FEAT_DIM = 128
+SLIDER_LEN = 30
 
 
 if __name__ == "__main__":
@@ -31,7 +35,26 @@ if __name__ == "__main__":
     print(testset['filename'][index])
     group = testset['filename'][index][:2]
 
+    with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
+        latent_dict = pickle.load(file)
+    
+    index = np.random.randint(len(latent_dict['z']))
+    init_z = latent_dict['z'][index]
+
+    model_name = 'CAAE_14class'
+    decoder = model.Generator(feat_dim=FEAT_DIM)
+    decoder.eval() 
+    decoder.to(device)
+
+    # Model initialization and parameter loading
+    decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cuda'))
+    decoder_dict = {k: v for k, v in decoder_dict.items()}
+    decoder.load_state_dict(decoder_dict)
+
     app = QApplication(sys.argv)
-    init_window = UserInterface.InitWindow(griffinlim, target_spec)
+    init_window = UserInterface.InitWindow(griffinlim, 
+                                           target_spec, 
+                                           decoder, 
+                                           init_z)
     init_window.show()
     sys.exit(app.exec_())

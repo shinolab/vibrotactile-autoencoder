@@ -1,14 +1,12 @@
 import torch
-import torchaudio
-import pickle
 import librosa
 import matplotlib.pyplot as plt
 import numpy as np
 import sounddevice as sd
+import Methods
 from GlobalOptimizer import JacobianOptimizer
-from CAAE_14class import model
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, 
-                             QWidget, QSlider, QPushButton, QLabel, QFrame)
+from PyQt5.QtWidgets import (QRadioButton, QMainWindow, QHBoxLayout, QVBoxLayout, 
+                             QWidget, QSlider, QPushButton, QLabel)
 from PyQt5.QtGui import QMovie
 from PyQt5.QtCore import Qt
 from PyQt5 import QtCore, QtGui
@@ -20,130 +18,129 @@ print(f'Selected device: {device}')
 FEAT_DIM = 128
 SLIDER_LEN = 30
 
-def img_denormalize(img):
-    # Min of original data: -80
-    # Max of original data: 0
-    origin_max = 0.
-    origin_min = -80.
-    img = (img + 1) / 2 # from [-1, 1] back to [0, 1]
-    denormalized_img = img * (origin_max - origin_min) + origin_min
-    return denormalized_img
-
-def z_denormalize(z):
-    # range of real latent space: [-7.24, 6.42]
-    origin_max = 6.42
-    origin_min = -7.24
-    z = (z + 1) / 2
-    denormalized_z = z * (origin_max - origin_min) + origin_min
-    return denormalized_z
-
-def myFunc(decoder, zs):
-    zs = z_denormalize(zs)
-    zs = torch.tensor(zs).to(torch.float32).to(device)
-    output = img_denormalize(decoder(zs)).reshape(zs.shape[0], -1)
-    # output = decoder(zs).reshape(zs.shape[0], -1)
-    return output
-
-def myGoodness(target, xs):
-    xs = torch.tensor(xs).to(device)
-    return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).cpu().detach().numpy() ** 2, axis=1) ** 0.5
-
-def myJacobian(model, z):
-    z = z_denormalize(z)
-    z = torch.tensor(z).to(torch.float32).to(device)
-    return model.calc_model_gradient(z, device)
-
-def getSliderLength(n, boundary_range, ratio, sample_num=1000):
-    samples = np.random.uniform(low=-boundary_range, high=boundary_range, size=(sample_num, 2, n))
-    distances = np.linalg.norm(samples[:, 0, :] - samples[:, 1, :], axis=1)
-    average_distance = np.average(distances)
-    return ratio * average_distance
-
-def getRandomAMatrix(high_dim, dim, optimals, range):
-    A = np.random.normal(size=(high_dim, dim))
-    try:
-        invA = np.linalg.pinv(A)
-    except:
-        print("Inverse failed!")
-        return None
-
-    low_optimals = np.matmul(invA, optimals.T).T
-    conditions = (low_optimals < range) & (low_optimals > -range)
-    conditions = np.all(conditions, axis=1)
-    if np.any(conditions):
-        return A
-    else:
-        print("A matrix is not qualified. Resampling......")
-        return None
-    
 
 class InitWindow(QWidget):
-    def __init__(self, griffinlim, target_spec):
+    def __init__(self, griffinlim, target_spec, decoder, init_z):
         super().__init__()
 
         self.griffinlim = griffinlim
         self.target_spec = target_spec
+        self.decoder = decoder
+        self.init_z = init_z
 
         self.initUI()
  
     def initUI(self):
+        font = QtGui.QFont()
+        font.setFamily('Microsoft YaHei')
+
         self.setWindowTitle('Initialization')
         self.setGeometry(100, 100, 400, 300)
 
         real_vib = self.spec2wav(self.target_spec)
         real_vib = real_vib * 100
-        real_vib = np.tile(real_vib, 10)
+        self.real_vib = np.tile(real_vib, 10)
 
         layout = QVBoxLayout()
-
-        title_font = QtGui.QFont()
-        title_font.setPointSize(16)
-        title_font.setBold(True)
-
-        target_title = QLabel('Target Vibration Recording')
-        target_title.setFont(title_font)
-        layout.addWidget(target_title, 1, Qt.AlignCenter | Qt.AlignTop)
 
         real_vib_layout = QHBoxLayout()
         real_vib_layout.addWidget(QLabel('Click to play the target vibration'), 1, Qt.AlignCenter | Qt.AlignCenter)
 
-        play_stop_button = QPushButton("Play")
-        play_stop_button.clicked.connect(lambda value: self.playRealVib(real_vib))
-        real_vib_layout.addWidget(play_stop_button, 1, Qt.AlignCenter | Qt.AlignCenter)
+        play_real_button = QPushButton("Play target vibration")
+        play_real_button.clicked.connect(self.playRealVib)
+        real_vib_layout.addWidget(play_real_button, 1, Qt.AlignCenter | Qt.AlignCenter)
 
-        self.wav_gif = QMovie('UI/ezgif-2-ea9f643ae8.gif')
-
-        self.wav_gif = QMovie()
-        self.wav_gif.setFileName('UI/ezgif-2-ea9f643ae8.gif')
-        self.wav_gif.jumpToFrame(0)
-
-        self.gif_label = QLabel()
-        self.gif_label.setMovie(self.wav_gif)
-        self.gif_label.setMinimumSize(QtCore.QSize(180, 75))
-        self.gif_label.setMaximumSize(QtCore.QSize(180, 150))
-        self.gif_label.setScaledContents(True)
-
-        layout.addWidget(self.gif_label, 1, Qt.AlignCenter | Qt.AlignCenter)
         layout.addLayout(real_vib_layout)
         layout.addSpacing(18)
 
-        layout.addWidget(QLabel(' Select the most similar vibration as \
-                                \nthe initial value of the optimizaiton'), 1, Qt.AlignCenter | Qt.AlignCenter)
+        self.init_vib = self.z2wav(self.init_z)
 
-        for i in range(4):
-            vib_layout = QHBoxLayout()
-            vib_layout.addWidget(QLabel('Vibration ' + str(i+1)), 1, Qt.AlignCenter | Qt.AlignCenter)
-            play = QPushButton("Play" + str(i+1))
-            play.clicked.connect(lambda value: self.playRealVib(real_vib))
-            vib_layout.addWidget(play, 1, Qt.AlignCenter | Qt.AlignCenter)
-            select = QPushButton("Select" + str(i+1))
-            select.clicked.connect(lambda value: self.close_dialog(i))
-            vib_layout.addWidget(select, 1, Qt.AlignCenter | Qt.AlignCenter)
+        init_vib_layout = QHBoxLayout()
+        init_vib_layout.addWidget(QLabel('Click to play the initial vibration'), 1, Qt.AlignCenter | Qt.AlignCenter)
 
-            layout.addLayout(vib_layout)
+        play_init_button = QPushButton("Play initial vibration")
+        play_init_button.clicked.connect(self.playInitVib)
+        init_vib_layout.addWidget(play_init_button, 1, Qt.AlignCenter | Qt.AlignCenter)
+        layout.addLayout(init_vib_layout)
 
+        layout.addWidget(QLabel('If the vibration like the target? - Please rank it'), 1, Qt.AlignCenter | Qt.AlignCenter)
+
+        rank_list = ["Good 👍", "So-so👌", "Bad 👎"]
+
+        rank_button_layout = QHBoxLayout()
+        for i in range(len(rank_list)):
+            checkButton = QRadioButton(rank_list[i], self)
+            checkButton.toggled.connect(self.checkRank)
+            rank_button_layout.addWidget(checkButton)
+        
+        layout.addLayout(rank_button_layout)
+
+        self.good_num = 0
+        self.soso_num = 0
+        self.bad_num = 0
+        self.good_list = []
+        self.soso_list = []
+        self.lMessage = QLabel(u"Good 👍: {0},\tSo-so👌: {1},\tBad 👎: {2}"\
+                               .format(self.good_num, self.soso_num, self.bad_num))
+        layout.addWidget(self.lMessage)
+
+        self.submit_button = QPushButton("Submit the rank")
+        self.submit_button.setEnabled(False)
+        self.submit_button.clicked.connect(self.submitRank)
+        layout.addWidget(self.submit_button, 1, Qt.AlignCenter | Qt.AlignCenter)
+        
         self.setLayout(layout)
 
+    def checkRank(self):
+        self.checkButton = self.sender()
+        # self.lMessage.setText(u'Choose {0}'.format(checkButton.text()))
+        self.rank = self.checkButton.text()
+        self.submit_button.setEnabled(True)
+
+    def submitRank(self):
+        if self.rank == "Good 👍":
+            self.rank = 0
+            self.good_num += 1
+            self.good_list.append(self.init_z)
+        elif self.rank == "So-so👌":
+            self.rank = 1
+            self.soso_num += 1
+            self.soso_list.append(self.init_z)
+        else:
+            self.rank = 2
+            self.bad_num += 1
+        self.lMessage.setText(u"Good 👍: {0},\tSo-so👌: {1},\tBad 👎: {2}"\
+                               .format(self.good_num, self.soso_num, self.bad_num))
+
+        self.checkButton.setCheckable(False)
+        self.checkButton.setCheckable(True)
+        sd.stop()
+        self.submit_button.setEnabled(False)
+
+        if self.good_num >= 3:
+            good_mean = np.array(self.good_list).mean(axis=0)
+            soso_mean = np.array(self.soso_list).mean(axis=0)
+
+            init_z = 0.8 * good_mean + 0.2 * soso_mean
+            self.new_window = DSS_Visualization(self.griffinlim, 
+                                                self.target_spec, 
+                                                self.decoder, 
+                                                init_z)
+            self.new_window.show()
+            self.hide()
+            return
+
+        new_z = Methods.SelectVec(self.init_z, self.rank)
+        self.init_vib = self.z2wav(new_z)
+
+    def z2wav(self, z):
+        spec = self.decoder(torch.tensor(z).unsqueeze(dim=0).to(torch.float32).to(device))
+        spec = Methods.img_denormalize(spec)
+        spec = spec.cpu().detach().squeeze().numpy()
+        wav = self.spec2wav(spec)
+        wav = wav * 100
+        wav = np.tile(wav, 10)
+        return wav
 
     def spec2wav(self, spec):
         ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80) #もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
@@ -154,60 +151,33 @@ class InitWindow(QWidget):
 
         return re_wav.cpu().detach().numpy()
     
-    def playRealVib(self, real_vib):
-        print(111)
-        # sd.play(real_vib, samplerate=44100)
-        # self.wav_gif.start()
- 
-    def close_dialog(self, index):
-        print(index)
-        self.new_window = DSS_Visualization(self.griffinlim, self.target_spec)
-        self.new_window.show()
-        self.hide()
+    def playRealVib(self):
+        sd.play(self.real_vib, samplerate=44100)
+
+    def playInitVib(self):
+        sd.play(self.init_vib, samplerate=44100)
     
 
 class DSS_Visualization(QMainWindow):
-    def __init__(self, griffinlim, target_spec):
+    def __init__(self, griffinlim, target_spec, decoder, init_z):
         super().__init__()
 
         self.setWindowTitle("DSS Visualization")
         self.setGeometry(100, 100, 400, 300)
 
-        model_name = 'CAAE_14class'
-        self.decoder = model.Generator(feat_dim=FEAT_DIM)
-        self.decoder.eval() 
-        self.decoder.to(device)
-
         self.griffinlim = griffinlim
-
-        # Model initialization and parameter loading
-        decoder_dict = torch.load(model_name + '/generator_' + str(FEAT_DIM) + 'd.pt', map_location=torch.device('cuda'))
-        decoder_dict = {k: v for k, v in decoder_dict.items()}
-        self.decoder.load_state_dict(decoder_dict)
+        self.decoder = decoder
 
         self.target_spec = target_spec
         target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = getSliderLength(FEAT_DIM, 1, 0.8)
-        # target_latent = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
-        # target_data = decoder(target_latent.reshape(1, -1))[0]
-
-        # while True:
-        #     random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
-        #     if random_A is not None:
-        #         break
-        # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
-
-        init_z = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
-        # init_z = np.random.normal(loc=0.0, scale=0.5, size=(FEAT_DIM))
-        # init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
-        # init_z = np.matmul(random_A, init_low_z)
+        slider_length = Methods.getSliderLength(FEAT_DIM, 1, 0.8)
 
         self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
-                      lambda zs: myFunc(self.decoder, zs), 
-                      lambda xs: myGoodness(target_data, xs), 
+                      lambda zs: Methods.myFunc(self.decoder, zs), 
+                      lambda xs: Methods.myGoodness(target_data, xs), 
                       slider_length, 
-                      lambda z: myJacobian(self.decoder, z), 
+                      lambda z: Methods.myJacobian(self.decoder, z), 
                       maximizer=False)
 
         self.optimizer.init(init_z)
