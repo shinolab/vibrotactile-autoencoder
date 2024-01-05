@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sounddevice as sd
 import Methods
+import pickle
 from GlobalOptimizer import JacobianOptimizer
 from PyQt5.QtWidgets import (QRadioButton, QMainWindow, QHBoxLayout, QVBoxLayout, 
                              QWidget, QSlider, QPushButton, QLabel)
@@ -83,6 +84,8 @@ class InitWindow(QWidget):
         self.bad_num = 0
         self.good_list = []
         self.soso_list = []
+        self.bad_list = []
+        self.tabu_list = []
         self.lMessage = QLabel(u"Good 👍: {0},\tSo-so👌: {1},\tBad 👎: {2}"\
                                .format(self.good_num, self.soso_num, self.bad_num))
         layout.addWidget(self.lMessage)
@@ -99,6 +102,88 @@ class InitWindow(QWidget):
         # self.lMessage.setText(u'Choose {0}'.format(checkButton.text()))
         self.rank = self.checkButton.text()
         self.submit_button.setEnabled(True)
+
+    def SelectVec(self, z, rank):
+        # with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
+        #     latent_dict = pickle.load(file)
+        
+        # avg_dis = 0
+        # dis_num = 0
+        # # Calculate the average distance of feature
+        # for i in range(len(latent_dict['z'])):
+        #      for j in range(i+1, len(latent_dict['z'])):
+        #           dis = np.linalg.norm(np.array(latent_dict['z'][i]) - np.array(latent_dict['z'][j]))
+        #           avg_dis += dis
+        #           dis_num += 1
+        
+        # avg_dis /= dis_num
+        # print(avg_dis)
+        avg_dis = 14.095
+        step = avg_dis / 8
+        tabu_range = step
+
+        with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
+            latent_dict = pickle.load(file)
+
+        new_z = []
+        # No.0 Good
+        if rank == 0:
+            while True:
+                index = np.random.randint(len(latent_dict['z']))
+                new_z = latent_dict['z'][index]
+
+                dis = np.linalg.norm(np.array(z) - np.array(new_z))
+                if dis <= step:
+                    break
+        # No.1 So-so
+        elif rank == 1:
+            while True:
+                index = np.random.randint(len(latent_dict['z']))
+                new_z = latent_dict['z'][index]
+
+                if self.tabu_list != []:
+                    if_continue = True
+                    while if_continue:
+                        if_continue = False
+                        for tabu_element in self.tabu_list:
+                            dis = np.linalg.norm(np.array(tabu_element) - np.array(new_z))
+                            if dis <= tabu_range:
+                                print('reselect')
+                                if_continue = True
+                                index = np.random.randint(len(latent_dict['z']))
+                                new_z = latent_dict['z'][index]
+                                break
+
+                dis = np.linalg.norm(np.array(z) - np.array(new_z))
+                if dis <= 2 * step:
+                    break
+        # No.2 Bad
+        elif rank == 2:
+            while True:
+                index = np.random.randint(len(latent_dict['z']))
+                new_z = latent_dict['z'][index]
+
+                if self.tabu_list != []:
+                    if_continue = True
+                    while if_continue:
+                        if_continue = False
+                        for tabu_element in self.tabu_list:
+                            dis = np.linalg.norm(np.array(tabu_element) - np.array(new_z))
+                            if dis <= tabu_range:
+                                print('reselect')
+                                if_continue = True
+                                index = np.random.randint(len(latent_dict['z']))
+                                new_z = latent_dict['z'][index]
+                                break
+
+                dis = np.linalg.norm(np.array(z) - np.array(new_z))
+                if dis >= 2 * step:
+                    break
+
+        self.tabu_list.append(new_z)
+        if len(self.tabu_list) > 5:
+            self.tabu_list.pop(0)
+        return new_z
 
     def submitRank(self):
         if self.rank == "Good 👍":
@@ -156,7 +241,7 @@ class InitWindow(QWidget):
             self.hide()
             return
 
-        new_z = Methods.SelectVec(self.init_z, self.rank)
+        new_z = self.SelectVec(self.init_z, self.rank)
         self.init_vib = self.z2wav(new_z)
 
     def z2wav(self, z):

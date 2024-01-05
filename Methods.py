@@ -89,7 +89,7 @@ def SelectVec(z, rank):
             index = np.random.randint(len(latent_dict['z']))
             new_z = latent_dict['z'][index]
             dis = np.linalg.norm(np.array(z) - np.array(new_z))
-            if dis <= avg_dis / 4:
+            if dis <= avg_dis / 8:
                 break
     # No.1 So-so
     # Select new_z nearer than avg_dis / 2
@@ -98,7 +98,7 @@ def SelectVec(z, rank):
             index = np.random.randint(len(latent_dict['z']))
             new_z = latent_dict['z'][index]
             dis = np.linalg.norm(np.array(z) - np.array(new_z))
-            if dis <= avg_dis / 2:
+            if dis <= avg_dis / 4:
                 break
     # No.2 Bad
     # Select new_z farther than avg_dis
@@ -107,8 +107,9 @@ def SelectVec(z, rank):
             index = np.random.randint(len(latent_dict['z']))
             new_z = latent_dict['z'][index]
             dis = np.linalg.norm(np.array(z) - np.array(new_z))
-            if dis >= avg_dis:
+            if dis >= avg_dis / 4:
                 break
 
     return new_z
+
 
