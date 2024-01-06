@@ -131,6 +131,7 @@ class InitWindow(QWidget):
             while True:
                 index = np.random.randint(len(latent_dict['z']))
                 new_z = latent_dict['z'][index]
+                print(latent_dict['label'][index])
 
                 dis = np.linalg.norm(np.array(z) - np.array(new_z))
                 if dis <= step:
@@ -148,14 +149,14 @@ class InitWindow(QWidget):
                         for tabu_element in self.tabu_list:
                             dis = np.linalg.norm(np.array(tabu_element) - np.array(new_z))
                             if dis <= tabu_range:
-                                print('reselect')
                                 if_continue = True
                                 index = np.random.randint(len(latent_dict['z']))
                                 new_z = latent_dict['z'][index]
                                 break
 
                 dis = np.linalg.norm(np.array(z) - np.array(new_z))
-                if dis <= 2 * step:
+                if dis >= step / 2 and dis <= 2 * step:
+                    print(latent_dict['label'][index])
                     break
         # No.2 Bad
         elif rank == 2:
@@ -170,7 +171,6 @@ class InitWindow(QWidget):
                         for tabu_element in self.tabu_list:
                             dis = np.linalg.norm(np.array(tabu_element) - np.array(new_z))
                             if dis <= tabu_range:
-                                print('reselect')
                                 if_continue = True
                                 index = np.random.randint(len(latent_dict['z']))
                                 new_z = latent_dict['z'][index]
@@ -178,6 +178,7 @@ class InitWindow(QWidget):
 
                 dis = np.linalg.norm(np.array(z) - np.array(new_z))
                 if dis >= 2 * step:
+                    print(latent_dict['label'][index])
                     break
 
         self.tabu_list.append(new_z)
@@ -205,7 +206,7 @@ class InitWindow(QWidget):
         sd.stop()
         self.submit_button.setEnabled(False)
 
-        if self.good_num >= 3:
+        if self.good_num >= 1:
             good_mean = np.array(self.good_list).mean(axis=0)
 
             if self.soso_list != []:
@@ -392,7 +393,20 @@ class DSS_Experiment(QMainWindow):
         self.target_wav = self.target_wav * 100
         self.target_wav = np.tile(self.target_wav, 10)
 
-        self.initOptimizer()
+        self.target_spec = target_spec
+        target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
+
+        slider_length = Methods.getSliderLength(FEAT_DIM, 1, 0.8)
+
+        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
+                      lambda zs: Methods.myFunc(self.decoder, zs), 
+                      lambda xs: Methods.myGoodness(target_data, xs), 
+                      slider_length, 
+                      lambda z: Methods.myJacobian(self.decoder, z), 
+                      maximizer=False)
+
+        self.optimizer.init(init_z)
+        self.best_score = self.optimizer.current_score
         self.initUI()
 
     def initUI(self):
@@ -468,34 +482,6 @@ class DSS_Experiment(QMainWindow):
 
         self.updateValues(_update_optimizer_flag=False)
         sd.stop()
-
-    def initOptimizer(self):
-        target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
-
-        slider_length = Methods.getSliderLength(FEAT_DIM, 1, 1.0)
-        target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
-        target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
-
-        while True:
-            random_A = Methods.getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
-            if random_A is not None:
-                break
-        # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
-        
-        # initialize the latent
-        init_z = np.random.uniform(low=-2.5, high=2.5, size=(FEAT_DIM))
-        init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
-        init_z = np.matmul(random_A, init_low_z)
-
-        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
-                      lambda zs: Methods.myFunc(self.decoder, zs), 
-                      lambda xs: Methods.myGoodness(target_data, xs), 
-                      slider_length, 
-                      lambda z: Methods.myJacobian(self.decoder, z), 
-                      maximizer=False)
-
-        self.optimizer.init(init_z)
-        self.best_score = self.optimizer.current_score
     
     def spec2wav(self, spec):
         ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80) #もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
