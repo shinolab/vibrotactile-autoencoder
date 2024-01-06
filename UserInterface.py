@@ -131,7 +131,7 @@ class InitWindow(QWidget):
             while True:
                 index = np.random.randint(len(latent_dict['z']))
                 new_z = latent_dict['z'][index]
-                print(latent_dict['label'][index])
+                # print(latent_dict['label'][index])
 
                 dis = np.linalg.norm(np.array(z) - np.array(new_z))
                 if dis <= step:
@@ -156,7 +156,7 @@ class InitWindow(QWidget):
 
                 dis = np.linalg.norm(np.array(z) - np.array(new_z))
                 if dis >= step / 2 and dis <= 2 * step:
-                    print(latent_dict['label'][index])
+                    # print(latent_dict['label'][index])
                     break
         # No.2 Bad
         elif rank == 2:
@@ -178,7 +178,7 @@ class InitWindow(QWidget):
 
                 dis = np.linalg.norm(np.array(z) - np.array(new_z))
                 if dis >= 2 * step:
-                    print(latent_dict['label'][index])
+                    # print(latent_dict['label'][index])
                     break
 
         self.tabu_list.append(new_z)
@@ -499,8 +499,9 @@ class DSS_Experiment(QMainWindow):
 
     def saveWavFile(self):
         file_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        real_file_name = "Generation_Results/Real/" + self.group + "_" + file_time + ".wav"
-        fake_file_name = "Generation_Results/Generated/" + self.group + "_" + file_time + ".wav"
+        subject_name = 'zhang'
+        real_file_name = "Generation_Results/Real/" + subject_name + "/" + self.group + "_" + file_time + ".wav"
+        fake_file_name = "Generation_Results/Generated/" + subject_name + "/" + self.group + "_" + file_time + ".wav"
         scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)
         scipy.io.wavfile.write(fake_file_name, 44100, self.re_wav)
     
