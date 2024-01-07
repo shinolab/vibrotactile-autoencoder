@@ -23,11 +23,12 @@ SLIDER_LEN = 30
 
 
 class InitWindow(QWidget):
-    def __init__(self, griffinlim, target_spec, decoder, init_z, task):
+    def __init__(self, griffinlim, target_spec, target_group, decoder, init_z, task):
         super().__init__()
 
         self.griffinlim = griffinlim
         self.target_spec = target_spec
+        self.target_group = target_group
         self.decoder = decoder
         self.init_z = init_z
         self.task = task
@@ -209,11 +210,13 @@ class InitWindow(QWidget):
         if self.good_num >= 1:
             good_mean = np.array(self.good_list).mean(axis=0)
 
-            if self.soso_list != []:
-                soso_mean = np.array(self.soso_list).mean(axis=0)
-                init_z = 0.8 * good_mean + 0.2 * soso_mean
-            else:
-                init_z = good_mean
+            # if self.soso_list != []:
+            #     soso_mean = np.array(self.soso_list).mean(axis=0)
+            #     init_z = 0.9 * good_mean + 0.1 * soso_mean
+            # else:
+            #     init_z = good_mean
+            
+            init_z = good_mean
 
             target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
             target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
@@ -236,6 +239,7 @@ class InitWindow(QWidget):
             if self.task == 'Experiment':
                 self.new_window = DSS_Experiment(self.griffinlim, 
                                                  self.target_spec, 
+                                                 self.target_group, 
                                                  self.decoder, 
                                                  init_z)
             self.new_window.show()
@@ -376,7 +380,7 @@ class DSS_Visualization(QMainWindow):
 
 
 class DSS_Experiment(QMainWindow):
-    def __init__(self, griffinlim, target_spec, decoder, init_z):
+    def __init__(self, griffinlim, target_spec, target_group, decoder, init_z):
         super().__init__()
 
         self.setWindowTitle("Vibration Optimizer")
@@ -384,6 +388,7 @@ class DSS_Experiment(QMainWindow):
 
         self.griffinlim = griffinlim
         self.target_spec = target_spec
+        self.target_group = target_group
         self.decoder = decoder
         self.init_z = init_z
 
@@ -394,18 +399,18 @@ class DSS_Experiment(QMainWindow):
         self.target_wav = np.tile(self.target_wav, 10)
 
         self.target_spec = target_spec
-        target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
+        self.target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
-        slider_length = Methods.getSliderLength(FEAT_DIM, 1, 0.8)
+        self.slider_length = Methods.getSliderLength(FEAT_DIM, 1, 0.8)
 
         self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
                       lambda zs: Methods.myFunc(self.decoder, zs), 
-                      lambda xs: Methods.myGoodness(target_data, xs), 
-                      slider_length, 
+                      lambda xs: Methods.myGoodness(self.target_data, xs), 
+                      self.slider_length, 
                       lambda z: Methods.myJacobian(self.decoder, z), 
                       maximizer=False)
 
-        self.optimizer.init(init_z)
+        self.optimizer.init(self.init_z)
         self.best_score = self.optimizer.current_score
         self.initUI()
 
@@ -500,15 +505,23 @@ class DSS_Experiment(QMainWindow):
     def saveWavFile(self):
         file_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         subject_name = 'zhang'
-        real_file_name = "Generation_Results/Real/" + subject_name + "/" + self.group + "_" + file_time + ".wav"
-        fake_file_name = "Generation_Results/Generated/" + subject_name + "/" + self.group + "_" + file_time + ".wav"
+        real_file_name = "Generation_Results/Real/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
+        fake_file_name = "Generation_Results/Generated/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
         scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)
         scipy.io.wavfile.write(fake_file_name, 44100, self.re_wav)
     
     def restart(self):
         self.slider.setValue(int(SLIDER_LEN / 2))
         sd.stop()
-        self.initOptimizer()
+        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
+                      lambda zs: Methods.myFunc(self.decoder, zs), 
+                      lambda xs: Methods.myGoodness(self.target_data, xs), 
+                      self.slider_length, 
+                      lambda z: Methods.myJacobian(self.decoder, z), 
+                      maximizer=False)
+
+        self.optimizer.init(self.init_z)
+        self.best_score = self.optimizer.current_score
         self.wav_gif.stop()
 
     def updateValues(self, _update_optimizer_flag):
