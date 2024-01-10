@@ -504,7 +504,7 @@ class DSS_Experiment(QMainWindow):
 
     def saveWavFile(self):
         file_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        subject_name = 'zhang'
+        subject_name = 'yang'
         real_file_name = "Generation_Results/Real/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
         fake_file_name = "Generation_Results/Generated/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
         scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)

@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-07 15:23:00
+LastEditTime: 2024-01-10 15:37:59
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -30,10 +30,13 @@ if __name__ == "__main__":
     with open('testset_7-class.pickle', 'rb') as file:
             testset = pickle.load(file)
     
-    index = np.random.randint(len(testset['spectrogram']))
-    target_spec = testset['spectrogram'][index]
-    print(testset['filename'][index])
-    target_group = testset['filename'][index][:2]
+    target_group = input("Input the target group: ")
+    while True:
+        index = np.random.randint(len(testset['spectrogram']))
+        target_spec = testset['spectrogram'][index]
+        if testset['filename'][index][:2] == target_group:
+            print(testset['filename'][index])
+            break
 
     with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
         latent_dict = pickle.load(file)
