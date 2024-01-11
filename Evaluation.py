@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-11 18:39:53
+LastEditTime: 2024-01-11 19:37:27
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -10,6 +10,8 @@ import numpy as np
 import sounddevice as sd
 import os
 import librosa
+import datetime
+import pandas as pd
 from functools import partial
 from PyQt5.QtWidgets import (QApplication, QRadioButton, QMainWindow, QHBoxLayout, QVBoxLayout, 
                              QWidget, QSlider, QPushButton, QLabel)
@@ -80,6 +82,7 @@ class Comparsion(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.file_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
  
     def initUI(self):
         font = QtGui.QFont()
@@ -102,6 +105,13 @@ class Comparsion(QWidget):
                 self.fake_file_list.append(os.path.join(root, name))
                 
         self.class_list = ['G2', 'G3', 'G4', 'G6', 'G8', 'G9']
+        self.confusion_matrix = {'G2_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
+                                 'G3_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
+                                 'G4_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
+                                 'G6_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
+                                 'G8_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
+                                 'G9_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0}}
+        self.confusion_matrix = pd.DataFrame(self.confusion_matrix)
         
         self.task_n = 0
         self.pairing_pattern = 0
@@ -150,7 +160,7 @@ class Comparsion(QWidget):
                 
         vib_layout_1 = QVBoxLayout()
         play_button_1 = QPushButton("Play")
-        play_button_1.clicked.connect(partial(self.playVib, self.vib_comp_list[0]))
+        play_button_1.clicked.connect(partial(self.playVib, 0))
         vib_layout_1.addWidget(play_button_1, 1, Qt.AlignCenter | Qt.AlignCenter)
         checkButton_1 = QRadioButton(self.class_list[0], self)
         checkButton_1.toggled.connect(self.checkClass)
@@ -159,7 +169,7 @@ class Comparsion(QWidget):
         
         vib_layout_2 = QVBoxLayout()
         play_button_2 = QPushButton("Play")
-        play_button_2.clicked.connect(partial(self.playVib, self.vib_comp_list[1]))
+        play_button_2.clicked.connect(partial(self.playVib, 1))
         vib_layout_2.addWidget(play_button_2, 1, Qt.AlignCenter | Qt.AlignCenter)
         checkButton_2 = QRadioButton(self.class_list[1], self)
         checkButton_2.toggled.connect(self.checkClass)
@@ -168,7 +178,7 @@ class Comparsion(QWidget):
         
         vib_layout_3 = QVBoxLayout()
         play_button_3 = QPushButton("Play")
-        play_button_3.clicked.connect(partial(self.playVib, self.vib_comp_list[2]))
+        play_button_3.clicked.connect(partial(self.playVib, 2))
         vib_layout_3.addWidget(play_button_3, 1, Qt.AlignCenter | Qt.AlignCenter)
         checkButton_3 = QRadioButton(self.class_list[2], self)
         checkButton_3.toggled.connect(self.checkClass)
@@ -177,7 +187,7 @@ class Comparsion(QWidget):
         
         vib_layout_4 = QVBoxLayout()
         play_button_4 = QPushButton("Play")
-        play_button_4.clicked.connect(partial(self.playVib, self.vib_comp_list[3]))
+        play_button_4.clicked.connect(partial(self.playVib, 3))
         vib_layout_4.addWidget(play_button_4, 1, Qt.AlignCenter | Qt.AlignCenter)
         checkButton_4 = QRadioButton(self.class_list[3], self)
         checkButton_4.toggled.connect(self.checkClass)
@@ -186,7 +196,7 @@ class Comparsion(QWidget):
         
         vib_layout_5 = QVBoxLayout()
         play_button_5 = QPushButton("Play")
-        play_button_5.clicked.connect(partial(self.playVib, self.vib_comp_list[4]))
+        play_button_5.clicked.connect(partial(self.playVib, 4))
         vib_layout_5.addWidget(play_button_5, 1, Qt.AlignCenter | Qt.AlignCenter)
         checkButton_5 = QRadioButton(self.class_list[4], self)
         checkButton_5.toggled.connect(self.checkClass)
@@ -195,7 +205,7 @@ class Comparsion(QWidget):
         
         vib_layout_6 = QVBoxLayout()
         play_button_6 = QPushButton("Play")
-        play_button_6.clicked.connect(partial(self.playVib, self.vib_comp_list[5]))
+        play_button_6.clicked.connect(partial(self.playVib, 5))
         vib_layout_6.addWidget(play_button_6, 1, Qt.AlignCenter | Qt.AlignCenter)
         checkButton_6 = QRadioButton(self.class_list[5], self)
         checkButton_6.toggled.connect(self.checkClass)
@@ -222,13 +232,16 @@ class Comparsion(QWidget):
         self.checkButton.setCheckable(True)
         sd.stop()
         self.submit_button.setEnabled(False)
-        print(self.class_to_guess, self.checked_class)
+        self.confusion_matrix[self.class_to_guess + '_True'][self.checked_class + '_User'] += 1
+        print(self.confusion_matrix)
+        self.confusion_matrix.to_csv('Evaluation_Results/confusion_matrix' + self.file_time + '.csv')
         
         if self.task_n == len(self.class_list) - 1:
             self.task_n = 0
             self.pairing_pattern += 1
+            print(self.pairing_pattern)
             if self.pairing_pattern > 2:
-                return
+                self.close()
             
             self.class_order = np.arange(len(self.class_list))
             np.random.shuffle(self.class_order)
@@ -264,8 +277,8 @@ class Comparsion(QWidget):
                     break
         
     
-    def playVib(self, vib):
-        sd.play(vib, samplerate=44100)
+    def playVib(self, vib_index):
+        sd.play(self.vib_comp_list[vib_index], samplerate=44100)
         
     def playVib_guess(self):
         sd.play(self.vib_to_guess, samplerate=44100)

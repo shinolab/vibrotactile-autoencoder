@@ -509,6 +509,7 @@ class DSS_Experiment(QMainWindow):
         fake_file_name = "Generation_Results/Generated/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
         scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)
         scipy.io.wavfile.write(fake_file_name, 44100, self.re_wav)
+        self.close()
     
     def restart(self):
         self.slider.setValue(int(SLIDER_LEN / 2))
