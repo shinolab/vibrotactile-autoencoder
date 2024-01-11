@@ -40,7 +40,7 @@ class InitWindow(QWidget):
         font.setFamily('Microsoft YaHei')
 
         self.setWindowTitle('Initialization')
-        self.setGeometry(100, 100, 400, 300)
+        self.setGeometry(600, 350, 400, 300)
 
         real_vib = self.spec2wav(self.target_spec)
         real_vib = real_vib * 100
@@ -279,7 +279,7 @@ class DSS_Visualization(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("DSS Visualization")
-        self.setGeometry(100, 100, 400, 300)
+        self.setGeometry(600, 350, 400, 300)
 
         self.griffinlim = griffinlim
         self.decoder = decoder
@@ -384,7 +384,7 @@ class DSS_Experiment(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Vibration Optimizer")
-        self.setGeometry(100, 100, 200, 400)
+        self.setGeometry(600, 350, 200, 400)
 
         self.griffinlim = griffinlim
         self.target_spec = target_spec
