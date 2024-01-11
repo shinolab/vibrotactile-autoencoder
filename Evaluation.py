@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-11 18:28:31
+LastEditTime: 2024-01-11 18:39:53
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -105,20 +105,26 @@ class Comparsion(QWidget):
         
         self.task_n = 0
         self.pairing_pattern = 0
-        # 0: Real vs Real
+        # 0: Real (Fake) vs Fake (Real)
         # 1: Fake vs Fake
-        # 2: Real (Fake) vs Fake (Real)
+        # 2: Real vs Real
+        if self.pairing_pattern == 0:
+            file_list = self.real_file_list + self.fake_file_list
+        if self.pairing_pattern == 1:
+            file_list = self.real_file_list
+        if self.pairing_pattern == 2:
+            file_list = self.fake_file_list
         
         self.class_order = np.arange(len(self.class_list))
         np.random.shuffle(self.class_order)
         
         self.class_to_guess = self.class_list[self.class_order[self.task_n]]
         
-        # Initial status: class 0, Real vs Real
+        # Initial status: class 0, Real (Fake) vs Fake (Real)
         while True:
-            index = np.random.randint(len(self.real_file_list))
-            if self.real_file_list[index].split('\\')[-1][:2] == self.class_to_guess:
-                self.vib_to_guess, fs = librosa.load(self.real_file_list[index], sr=44100)
+            index = np.random.randint(len(file_list))
+            if file_list[index].split('\\')[-1][:2] == self.class_to_guess:
+                self.vib_to_guess, fs = librosa.load(file_list[index], sr=44100)
                 break
         
         layout = QVBoxLayout()
@@ -135,10 +141,10 @@ class Comparsion(QWidget):
         
         for c in self.class_list:
             while True:
-                # Initial status: Real vs Real
-                index = np.random.randint(len(self.real_file_list))
-                if self.real_file_list[index].split('\\')[-1][:2] == c:
-                    vib_c, fs = librosa.load(self.real_file_list[index], sr=44100)
+                # Initial status: Real (Fake) vs Fake (Real)
+                index = np.random.randint(len(file_list))
+                if file_list[index].split('\\')[-1][:2] == c:
+                    vib_c, fs = librosa.load(file_list[index], sr=44100)
                     self.vib_comp_list.append(vib_c)
                     break
                 
@@ -218,7 +224,7 @@ class Comparsion(QWidget):
         self.submit_button.setEnabled(False)
         print(self.class_to_guess, self.checked_class)
         
-        if self.task_n == len(self.class_list - 1):
+        if self.task_n == len(self.class_list) - 1:
             self.task_n = 0
             self.pairing_pattern += 1
             if self.pairing_pattern > 2:
@@ -227,19 +233,20 @@ class Comparsion(QWidget):
             self.class_order = np.arange(len(self.class_list))
             np.random.shuffle(self.class_order)
             
-            self.class_to_guess = self.class_list[self.class_order[self.task_n]] 
         else:
             self.task_n += 1
+        
+        self.class_to_guess = self.class_list[self.class_order[self.task_n]] 
             
-        # 0: Real vs Real
+        # 0: Real (Fake) vs Fake (Real)
         # 1: Fake vs Fake
-        # 2: Real (Fake) vs Fake (Real)
+        # 2: Real vs Real
         if self.pairing_pattern == 0:
-            file_list = self.real_file_list
-        if self.pairing_pattern == 1:
-            file_list = self.fake_file_list
-        if self.pairing_pattern == 2:
             file_list = self.real_file_list + self.fake_file_list
+        if self.pairing_pattern == 1:
+            file_list = self.real_file_list
+        if self.pairing_pattern == 2:
+            file_list = self.fake_file_list
         
         while True:     
             index = np.random.randint(len(file_list))
