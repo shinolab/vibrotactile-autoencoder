@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-11 19:37:27
+LastEditTime: 2024-01-11 19:54:36
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -72,7 +72,7 @@ class CategoryDisplay(QWidget):
         sd.stop()
         self.new_window = Comparsion()
         self.new_window.show()
-        self.hide()
+        self.close()
     
     def playVib(self, vib):
         sd.play(vib, samplerate=44100)
@@ -239,9 +239,8 @@ class Comparsion(QWidget):
         if self.task_n == len(self.class_list) - 1:
             self.task_n = 0
             self.pairing_pattern += 1
-            print(self.pairing_pattern)
             if self.pairing_pattern > 2:
-                self.close()
+                sys.exit()
             
             self.class_order = np.arange(len(self.class_list))
             np.random.shuffle(self.class_order)

@@ -7,6 +7,7 @@ import numpy as np
 import sounddevice as sd
 import Methods
 import pickle
+import sys
 from GlobalOptimizer import JacobianOptimizer
 from PyQt5.QtWidgets import (QRadioButton, QMainWindow, QHBoxLayout, QVBoxLayout, 
                              QWidget, QSlider, QPushButton, QLabel)
@@ -509,7 +510,7 @@ class DSS_Experiment(QMainWindow):
         fake_file_name = "Generation_Results/Generated/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
         scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)
         scipy.io.wavfile.write(fake_file_name, 44100, self.re_wav)
-        self.close()
+        sys.exit()
     
     def restart(self):
         self.slider.setValue(int(SLIDER_LEN / 2))
