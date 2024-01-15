@@ -31,7 +31,7 @@ class CategoryDisplay(QWidget):
         self.setWindowTitle('Categories')
         self.setGeometry(600, 350, 700, 130)
         
-        real_data_path = 'Generation_Results/Real/'
+        real_data_path = 'Reference_Waves'
         
         self.real_file_list = []
         for root, dirs, files in os.walk(real_data_path):
@@ -91,7 +91,7 @@ class Comparsion(QWidget):
         self.setWindowTitle('Evaluation')
         self.setGeometry(600, 350, 400, 150)
         
-        real_data_path = 'Generation_Results/Real/'
+        real_data_path = 'Reference_Waves'
         fake_data_path = 'Generation_Results'
         
         self.real_file_list = []
