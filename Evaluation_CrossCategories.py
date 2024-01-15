@@ -92,7 +92,7 @@ class Comparsion(QWidget):
         self.setGeometry(600, 350, 400, 150)
         
         real_data_path = 'Generation_Results/Real/'
-        fake_data_path = 'Generation_Results/Generated/'
+        fake_data_path = 'Generation_Results'
         
         self.real_file_list = []
         for root, dirs, files in os.walk(real_data_path):
