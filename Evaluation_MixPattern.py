@@ -13,10 +13,10 @@ import librosa
 import datetime
 import pandas as pd
 from functools import partial
-from PyQt5.QtWidgets import (QApplication, QRadioButton, QMainWindow, QHBoxLayout, QVBoxLayout, 
-                             QWidget, QSlider, QPushButton, QLabel)
+from PyQt5.QtWidgets import (QApplication, QRadioButton, QHBoxLayout, QVBoxLayout, 
+                             QWidget, QPushButton, QLabel)
 from PyQt5.QtCore import Qt
-from PyQt5 import QtCore, QtGui
+from PyQt5 import QtGui
 
 
 class CategoryDisplay(QWidget):
