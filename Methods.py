@@ -29,9 +29,12 @@ def myFunc(decoder, zs):
     # output = decoder(zs).reshape(zs.shape[0], -1)
     return output
 
-def myGoodness(target, xs):
-    xs = torch.tensor(xs).to(device)
-    return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).cpu().detach().numpy() ** 2, axis=1) ** 0.5
+# def myGoodness(target, xs):
+#     xs = torch.tensor(xs).to(device)
+#     return np.sum((xs.reshape(xs.shape[0], -1) - target.reshape(1, -1)).cpu().detach().numpy() ** 2, axis=1) ** 0.5
+
+def myGoodness(xs):
+    pass
 
 def myJacobian(model, z):
     z = z_denormalize(z)

@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-06-20 21:02:34
 LastEditors: Mingxin Zhang
-LastEditTime: 2023-11-22 15:45:32
+LastEditTime: 2024-01-16 16:28:46
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import torch
@@ -58,7 +58,7 @@ class JacobianOptimizer(GlobalOptimizer):
     def update(self, t):
         self.current_z = self.get_z(t)
         self.current_x = self.f(self.current_z.reshape(1, -1))[0]
-        self.current_score = self.g(self.current_x.reshape(1, -1))[0]
+        # self.current_score = self.g(self.current_x.reshape(1, -1))[0]
 
         if np.abs(t - 0.5) > self.center_tolerance:
             self.update_jacobian(self.current_z)

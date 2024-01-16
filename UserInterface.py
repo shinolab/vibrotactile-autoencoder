@@ -14,7 +14,6 @@ from PyQt5.QtWidgets import (QRadioButton, QMainWindow, QHBoxLayout, QVBoxLayout
 from PyQt5.QtGui import QMovie
 from PyQt5.QtCore import Qt
 from PyQt5 import QtCore, QtGui
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 device = torch.device("cuda")
 print(f'Selected device: {device}')
@@ -24,12 +23,13 @@ SLIDER_LEN = 30
 
 
 class InitWindow(QWidget):
-    def __init__(self, griffinlim, target_spec, target_group, decoder, init_z, task):
+    def __init__(self, griffinlim, target_vib, target_group, target_file_name, decoder, init_z, task):
         super().__init__()
 
         self.griffinlim = griffinlim
-        self.target_spec = target_spec
+        self.target_vib = target_vib
         self.target_group = target_group
+        self.target_file_name = target_file_name
         self.decoder = decoder
         self.init_z = init_z
         self.task = task
@@ -43,8 +43,9 @@ class InitWindow(QWidget):
         self.setWindowTitle('Initialization')
         self.setGeometry(600, 350, 400, 300)
 
-        real_vib = self.spec2wav(self.target_spec)
-        real_vib = real_vib * 100
+        # real_vib = self.spec2wav(self.target_spec)
+        # real_vib = real_vib * 100
+        real_vib = self.target_vib
         self.real_vib = np.tile(real_vib, 10)
 
         layout = QVBoxLayout()
@@ -232,15 +233,11 @@ class InitWindow(QWidget):
             init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
             init_z = np.matmul(random_A, init_low_z)
 
-            if self.task == 'Visualization':
-                self.new_window = DSS_Visualization(self.griffinlim, 
-                                                    self.target_spec, 
-                                                    self.decoder, 
-                                                    init_z)
             if self.task == 'Experiment':
                 self.new_window = DSS_Experiment(self.griffinlim, 
-                                                 self.target_spec, 
+                                                 self.target_vib, 
                                                  self.target_group, 
+                                                 self.target_file_name,
                                                  self.decoder, 
                                                  init_z)
             self.new_window.show()
@@ -273,140 +270,34 @@ class InitWindow(QWidget):
 
     def playInitVib(self):
         sd.play(self.init_vib, samplerate=44100)
-    
-
-class DSS_Visualization(QMainWindow):
-    def __init__(self, griffinlim, target_spec, decoder, init_z):
-        super().__init__()
-
-        self.setWindowTitle("DSS Visualization")
-        self.setGeometry(600, 350, 400, 300)
-
-        self.griffinlim = griffinlim
-        self.decoder = decoder
-
-        self.target_spec = target_spec
-        target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
-
-        slider_length = Methods.getSliderLength(FEAT_DIM, 1, 0.8)
-
-        self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
-                      lambda zs: Methods.myFunc(self.decoder, zs), 
-                      lambda xs: Methods.myGoodness(target_data, xs), 
-                      slider_length, 
-                      lambda z: Methods.myJacobian(self.decoder, z), 
-                      maximizer=False)
-
-        self.optimizer.init(init_z)
-        self.best_score = self.optimizer.current_score
-
-        self.initUI()
-
-    def initUI(self):
-        main_widget = QWidget(self)
-        self.setCentralWidget(main_widget)
-
-        layout = QVBoxLayout(main_widget)
-
-        # 创建显示热度图的区域
-        layout.addWidget(QLabel('Target Real Spectrogram'), 1, Qt.AlignCenter | Qt.AlignTop)
-        self.figure_real, self.ax_real = plt.subplots()
-        self.canvas_real = FigureCanvas(self.figure_real)
-        layout.addWidget(self.canvas_real)
-
-        layout.addWidget(QLabel('Generated Spectrogram'), 1, Qt.AlignCenter | Qt.AlignTop)
-        self.figure_fake, self.ax_fake = plt.subplots()
-        self.canvas_fake = FigureCanvas(self.figure_fake)
-        layout.addWidget(self.canvas_fake)
-
-        # 创建滑块并设置范围和初始值
-        self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(1, int(SLIDER_LEN))
-        self.slider.setValue(int(SLIDER_LEN / 2))
-        layout.addWidget(self.slider)
-
-        next_button = QPushButton("Next")
-        next_button.clicked.connect(lambda value: self.updateValues(_update_optimizer_flag=True))
-        layout.addWidget(next_button)
-
-        # 连接滑块的valueChanged信号到更新热度图的槽函数
-        self.slider.valueChanged.connect(lambda value: self.updateValues(_update_optimizer_flag=False))
-
-        # 初始化热度图
-        self.updateValues(_update_optimizer_flag=False)
-
-        self.ax_real.clear()
-        self.ax_real.imshow(self.target_spec, cmap='viridis')
-        self.ax_real.set_xticks([])
-        self.ax_real.set_yticks([])
-        self.canvas_real.draw()
-
-    def updateValues(self, _update_optimizer_flag):
-        # 获取滑块的值
-        slider_value = self.slider.value()
-        t = slider_value / (SLIDER_LEN - 1)
-
-        if _update_optimizer_flag:
-            self.optimizer.update(t)
-            print('Next')
-
-        z = self.optimizer.get_z(t)
-
-        print(z.min())
-        print(z.max())
-        print(z.mean())
-        print(z.std())
-
-        x = self.optimizer.f(z.reshape(1, -1))[0]
-        spec = x.cpu().detach().numpy().reshape(48, 320)
-        score = self.optimizer.g(x.reshape(1, -1))[0]
-
-        print('mean: ', z.mean(), ' std: ', z.std())
-
-        print(score)
-
-        # 绘制热度图
-        self.ax_fake.clear()
-        self.ax_fake.imshow(spec, cmap='viridis')
-        self.ax_fake.set_xticks([])
-        self.ax_fake.set_yticks([])
-        self.canvas_fake.draw()
-
-        ex = np.full((1025 - spec.shape[0], spec.shape[1]), -80)#もとの音声の周波数上限を切っているので配列の大きさを合わせるために-80dbで埋めている
-        spec = np.append(spec, ex, axis=0)
-
-        spec = librosa.db_to_amplitude(spec)
-        re_wav = self.griffinlim(torch.tensor(spec).to(device)).cpu().detach().numpy()
-        sd.play(np.tile(100*re_wav, 10))
 
 
 class DSS_Experiment(QMainWindow):
-    def __init__(self, griffinlim, target_spec, target_group, decoder, init_z):
+    def __init__(self, griffinlim, target_vib, target_group, target_file_name, decoder, init_z):
         super().__init__()
 
         self.setWindowTitle("Vibration Optimizer")
         self.setGeometry(600, 350, 200, 400)
 
         self.griffinlim = griffinlim
-        self.target_spec = target_spec
+        self.target_wav = target_vib
         self.target_group = target_group
+        self.target_file_name = target_file_name
         self.decoder = decoder
         self.init_z = init_z
 
-        self.target_wav = self.spec2wav(self.target_spec)
+        # self.target_wav = self.spec2wav(self.target_spec)
         # meter = pyln.Meter(44100) # create BS.1770 meter
         # self.target_loudness = meter.integrated_loudness(self.target_wav)
-        self.target_wav = self.target_wav * 100
+        # self.target_wav = self.target_wav * 100
         self.target_wav = np.tile(self.target_wav, 10)
 
-        self.target_spec = target_spec
-        self.target_data = torch.unsqueeze(torch.tensor(self.target_spec), 0).to(torch.float32).to(device)
 
         self.slider_length = Methods.getSliderLength(FEAT_DIM, 1, 0.8)
 
         self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
                       lambda zs: Methods.myFunc(self.decoder, zs), 
-                      lambda xs: Methods.myGoodness(self.target_data, xs), 
+                      lambda xs: Methods.myGoodness(xs), 
                       self.slider_length, 
                       lambda z: Methods.myJacobian(self.decoder, z), 
                       maximizer=False)
@@ -505,10 +396,10 @@ class DSS_Experiment(QMainWindow):
 
     def saveWavFile(self):
         file_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        subject_name = 'yang'
-        real_file_name = "Generation_Results/Real/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
-        fake_file_name = "Generation_Results/Generated/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
-        scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)
+        subject_name = 'zhang'
+        # real_file_name = "Generation_Results/Real/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
+        fake_file_name = "Generated_Waves/" + subject_name + "/" + self.target_file_name + "_" + file_time + ".wav"
+        # scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)
         scipy.io.wavfile.write(fake_file_name, 44100, self.re_wav)
         sys.exit()
     

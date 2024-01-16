@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-11 19:54:36
+LastEditTime: 2024-01-16 16:08:48
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -31,14 +31,14 @@ class CategoryDisplay(QWidget):
         self.setWindowTitle('Categories')
         self.setGeometry(600, 350, 700, 130)
         
-        real_data_path = 'Generation_Results/Real/'
+        real_data_path = 'Reference_Waves/'
         
         self.real_file_list = []
         for root, dirs, files in os.walk(real_data_path):
             for name in files:
                 self.real_file_list.append(os.path.join(root, name))
         
-        class_list = ['G2 StoneTile', 'G3 CeramicTile', 'G4 CherryTree', 'G6 GrassFibers', 'G8 RoughPaper', 'G9 Jeans']
+        class_list = ['G2 StoneTile', 'G3 CeramicTile', 'G4 CherryTree', 'G6 GrassFibers', 'G8 RoughPaper']
         
         layout = QVBoxLayout()
         
@@ -91,8 +91,8 @@ class Comparsion(QWidget):
         self.setWindowTitle('Evaluation')
         self.setGeometry(600, 350, 400, 150)
         
-        real_data_path = 'Generation_Results/Real/'
-        fake_data_path = 'Generation_Results/Generated/'
+        real_data_path = 'Reference_Waves/'
+        fake_data_path = 'Generated_Waves/'
         
         self.real_file_list = []
         for root, dirs, files in os.walk(real_data_path):
@@ -104,13 +104,12 @@ class Comparsion(QWidget):
             for name in files:
                 self.fake_file_list.append(os.path.join(root, name))
                 
-        self.class_list = ['G2', 'G3', 'G4', 'G6', 'G8', 'G9']
-        self.confusion_matrix = {'G2_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
-                                 'G3_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
-                                 'G4_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
-                                 'G6_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
-                                 'G8_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0},
-                                 'G9_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0, 'G9_User': 0}}
+        self.class_list = ['G2', 'G3', 'G4', 'G6', 'G8']
+        self.confusion_matrix = {'G2_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
+                                 'G3_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
+                                 'G4_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
+                                 'G6_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
+                                 'G8_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0}}
         self.confusion_matrix = pd.DataFrame(self.confusion_matrix)
         
         self.task_n = 0
@@ -202,15 +201,6 @@ class Comparsion(QWidget):
         checkButton_5.toggled.connect(self.checkClass)
         vib_layout_5.addWidget(checkButton_5, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_5)
-        
-        vib_layout_6 = QVBoxLayout()
-        play_button_6 = QPushButton("Play")
-        play_button_6.clicked.connect(partial(self.playVib, 5))
-        vib_layout_6.addWidget(play_button_6, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_6 = QRadioButton(self.class_list[5], self)
-        checkButton_6.toggled.connect(self.checkClass)
-        vib_layout_6.addWidget(checkButton_6, 1, Qt.AlignCenter | Qt.AlignCenter)
-        body_layout.addLayout(vib_layout_6)
         
         layout.addLayout(body_layout)
         
