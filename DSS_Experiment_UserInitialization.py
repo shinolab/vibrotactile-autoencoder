@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-16 16:36:48
+LastEditTime: 2024-01-16 19:18:42
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -49,9 +49,10 @@ if __name__ == "__main__":
     
     while True:
         index = np.random.randint(len(real_file_list))
-        if real_file_list[index].split('/')[-1][:2] == target_group:
+        if real_file_list[index].split('/')[-1][:4] == target_group:
             target_file_name = real_file_list[index].split('/')[-1][:4]
             target_vib, fs = librosa.load(real_file_list[index], sr=44100)
+            print(target_file_name)
             break
 
     with open('CAAE_14class/latent_dict.pickle', 'rb') as file:

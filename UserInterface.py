@@ -408,7 +408,7 @@ class DSS_Experiment(QMainWindow):
         sd.stop()
         self.optimizer = JacobianOptimizer.JacobianOptimizer(FEAT_DIM, 48*320, 
                       lambda zs: Methods.myFunc(self.decoder, zs), 
-                      lambda xs: Methods.myGoodness(self.target_data, xs), 
+                      lambda xs: Methods.myGoodness(xs), 
                       self.slider_length, 
                       lambda z: Methods.myJacobian(self.decoder, z), 
                       maximizer=False)
