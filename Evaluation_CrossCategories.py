@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-16 16:09:05
+LastEditTime: 2024-01-18 16:02:36
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -143,7 +143,7 @@ class Comparsion(QWidget):
         for c in self.class_list:
             while True:
                 index = np.random.randint(len(self.real_file_list))
-                if self.real_file_list[index].split('\\')[-1][:2] == c:
+                if self.real_file_list[index].split('/')[-1][:2] == c:
                     vib_c, fs = librosa.load(self.real_file_list[index], sr=44100)
                     self.vib_comp_list.append(vib_c)
                     break
@@ -214,7 +214,7 @@ class Comparsion(QWidget):
         sd.stop()
         self.submit_button.setEnabled(False)
         self.confusion_matrix[self.class_to_guess + '_True'][self.checked_class + '_User'] += 1
-        print(self.confusion_matrix)
+        # print(self.confusion_matrix)
         self.confusion_matrix.to_csv('Evaluation_Results/confusion_matrix' + self.file_time + '.csv')
         
         if self.task_n == len(self.class_list) - 1:
@@ -244,7 +244,7 @@ class Comparsion(QWidget):
         for c in self.class_list:
             while True:
                 index = np.random.randint(len(self.real_file_list))
-                if self.real_file_list[index].split('\\')[-1][:2] == c:
+                if self.real_file_list[index].split('/')[-1][:2] == c:
                     vib_c, fs = librosa.load(self.real_file_list[index], sr=44100)
                     self.vib_comp_list.append(vib_c)
                     break
