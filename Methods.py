@@ -1,3 +1,10 @@
+'''
+Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
+Date: 2023-12-19 17:22:25
+LastEditors: Mingxin Zhang
+LastEditTime: 2024-01-18 18:21:57
+Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
+'''
 import numpy as np
 import pickle
 import torch
@@ -23,7 +30,7 @@ def z_denormalize(z):
     return denormalized_z
 
 def myFunc(decoder, zs):
-    zs = z_denormalize(zs)
+    # zs = z_denormalize(zs)
     zs = torch.tensor(zs).to(torch.float32).to(device)
     output = img_denormalize(decoder(zs)).reshape(zs.shape[0], -1)
     # output = decoder(zs).reshape(zs.shape[0], -1)
@@ -37,7 +44,7 @@ def myGoodness(xs):
     pass
 
 def myJacobian(model, z):
-    z = z_denormalize(z)
+    # z = z_denormalize(z)
     z = torch.tensor(z).to(torch.float32).to(device)
     return model.calc_model_gradient(z, device)
 
@@ -63,56 +70,5 @@ def getRandomAMatrix(high_dim, dim, optimals, range):
     else:
         print("A matrix is not qualified. Resampling......")
         return None
-
-def SelectVec(z, rank):
-    # with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
-    #     latent_dict = pickle.load(file)
-    
-    # avg_dis = 0
-    # dis_num = 0
-    # # Calculate the average distance of feature
-    # for i in range(len(latent_dict['z'])):
-    #      for j in range(i+1, len(latent_dict['z'])):
-    #           dis = np.linalg.norm(np.array(latent_dict['z'][i]) - np.array(latent_dict['z'][j]))
-    #           avg_dis += dis
-    #           dis_num += 1
-    
-    # avg_dis /= dis_num
-    # print(avg_dis)
-    avg_dis = 14.095
-
-    with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
-        latent_dict = pickle.load(file)
-
-    new_z = []
-    # No.0 Good
-    # Select new_z nearer than avg_dis / 4
-    if rank == 0:
-        while True:
-            index = np.random.randint(len(latent_dict['z']))
-            new_z = latent_dict['z'][index]
-            dis = np.linalg.norm(np.array(z) - np.array(new_z))
-            if dis <= avg_dis / 8:
-                break
-    # No.1 So-so
-    # Select new_z nearer than avg_dis / 2
-    elif rank == 1:
-        while True:
-            index = np.random.randint(len(latent_dict['z']))
-            new_z = latent_dict['z'][index]
-            dis = np.linalg.norm(np.array(z) - np.array(new_z))
-            if dis <= avg_dis / 4:
-                break
-    # No.2 Bad
-    # Select new_z farther than avg_dis
-    elif rank == 2:
-        while True:
-            index = np.random.randint(len(latent_dict['z']))
-            new_z = latent_dict['z'][index]
-            dis = np.linalg.norm(np.array(z) - np.array(new_z))
-            if dis >= avg_dis / 4:
-                break
-
-    return new_z
 
 

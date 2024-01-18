@@ -31,6 +31,10 @@ class InitWindow(QWidget):
         self.target_group = target_group
         self.target_file_name = target_file_name
         self.decoder = decoder
+        
+        target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
+        target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
+
         self.init_z = init_z
         self.task = task
 
@@ -187,6 +191,7 @@ class InitWindow(QWidget):
         self.tabu_list.append(new_z)
         if len(self.tabu_list) > 5:
             self.tabu_list.pop(0)
+            
         return new_z
 
     def submitRank(self):
@@ -219,20 +224,7 @@ class InitWindow(QWidget):
             #     init_z = good_mean
             
             init_z = good_mean
-
-            target_latent = np.random.uniform(-2.5, 2.5, FEAT_DIM)
-            target_latent = torch.tensor(target_latent).to(torch.float32).to(device)
-
-            while True:
-                random_A = Methods.getRandomAMatrix(FEAT_DIM, 6, np.array(target_latent.reshape(1, -1).cpu()), 1)
-                if random_A is not None:
-                    break
-            # random_A = getRandomAMatrix(FEAT_DIM, 6, target_latent.reshape(1, -1), 1)
-
-            # initialize the latent
-            init_low_z = np.matmul(np.linalg.pinv(random_A), init_z.T).T
-            init_z = np.matmul(random_A, init_low_z)
-
+            
             if self.task == 'Experiment':
                 self.new_window = DSS_Experiment(self.griffinlim, 
                                                  self.target_vib, 
@@ -245,7 +237,8 @@ class InitWindow(QWidget):
             return
 
         new_z = self.SelectVec(self.init_z, self.rank)
-        self.init_vib = self.z2wav(new_z)
+        self.init_z = new_z
+        self.init_vib = self.z2wav(self.init_z)
 
     def z2wav(self, z):
         spec = self.decoder(torch.tensor(z).unsqueeze(dim=0).to(torch.float32).to(device))
