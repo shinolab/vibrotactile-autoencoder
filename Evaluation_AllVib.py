@@ -11,6 +11,7 @@ import sounddevice as sd
 import os
 import librosa
 import datetime
+import matplotlib.pyplot as plt
 import pandas as pd
 from functools import partial
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
@@ -228,9 +229,26 @@ class Comparsion(QWidget):
         print(self.pred)
         print(self.true)
 
-        conf_matrix = confusion_matrix(self.true, self.pred)
+        conf_matrix = confusion_matrix(self.true, self.pred, labels=sorted(set(self.true + self.pred)))
 
-        pd.DataFrame(conf_matrix).to_csv('Evaluation_Results/confusion_matrix_all_' + self.file_time + '.csv')
+        cm = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, 
+                                    display_labels=sorted(set(self.true + self.pred)))
+
+        fig, ax = plt.subplots(figsize=(8,8))
+        plt.title('Confusion matrix')
+
+        cm.plot(
+            include_values=True,
+            cmap="Blues",
+            colorbar=False,
+            ax=ax,
+            xticks_rotation="horizontal",
+            values_format="d"
+        ).figure_.savefig('confusion_matrix.png', dpi=300)
+
+        plt.close()
+
+        pd.DataFrame(conf_matrix).to_csv('confusion_matrix_all_' + self.file_time + '.csv')
         
         if self.task_n == len(self.vib_list) - 1:
             self.task_n = 0
