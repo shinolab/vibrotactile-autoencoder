@@ -234,7 +234,7 @@ class Comparsion(QWidget):
         cm = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, 
                                     display_labels=sorted(set(self.true + self.pred)))
 
-        fig, ax = plt.subplots(figsize=(8,8))
+        fig, ax = plt.subplots(figsize=(9, 9))
         plt.title('Confusion matrix')
 
         cm.plot(
