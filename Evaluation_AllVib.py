@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-16 16:08:48
+LastEditTime: 2024-01-19 17:04:33
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -13,6 +13,7 @@ import librosa
 import datetime
 import pandas as pd
 from functools import partial
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from PyQt5.QtWidgets import (QApplication, QRadioButton, QHBoxLayout, QVBoxLayout, 
                              QWidget, QPushButton, QLabel)
 from PyQt5.QtCore import Qt
@@ -31,7 +32,7 @@ class CategoryDisplay(QWidget):
         self.setWindowTitle('Categories')
         self.setGeometry(600, 350, 700, 130)
         
-        real_data_path = 'Reference_Waves/'
+        real_data_path = 'Reference_Waves'
         
         self.real_file_list = []
         for root, dirs, files in os.walk(real_data_path):
@@ -105,35 +106,28 @@ class Comparsion(QWidget):
                 self.fake_file_list.append(os.path.join(root, name))
                 
         self.class_list = ['G2', 'G3', 'G4', 'G6', 'G8']
-        self.confusion_matrix = {'G2_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
-                                 'G3_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
-                                 'G4_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
-                                 'G6_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
-                                 'G8_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0}}
-        self.confusion_matrix = pd.DataFrame(self.confusion_matrix)
+        self.vib_list = ['G2_1', 'G2_2', 'G2_3', 
+                         'G3_1', 'G3_2', 'G3_3',
+                         'G4_1', 'G4_2', 'G4_3',
+                         'G6_1', 'G6_2', 'G6_3',
+                         'G8_1', 'G8_2', 'G8_3']
         
         self.task_n = 0
-        self.pairing_pattern = 0
-        # 0: Real (Fake) vs Fake (Real)
-        # 1: Fake vs Fake
-        # 2: Real vs Real
-        if self.pairing_pattern == 0:
-            file_list = self.real_file_list + self.fake_file_list
-        if self.pairing_pattern == 1:
-            file_list = self.real_file_list
-        if self.pairing_pattern == 2:
-            file_list = self.fake_file_list
+        self.repeat_time = 0
+        # Only Fake (generated to classify) vs Real (class reference)
+
+        self.pred = []
+        self.true = []
         
-        self.class_order = np.arange(len(self.class_list))
-        np.random.shuffle(self.class_order)
+        self.vib_order = np.arange(len(self.vib_list))
+        np.random.shuffle(self.vib_order)
         
-        self.class_to_guess = self.class_list[self.class_order[self.task_n]]
-        
-        # Initial status: class 0, Real (Fake) vs Fake (Real)
+        self.vib_name = self.vib_list[self.vib_order[self.task_n]]
+
         while True:
-            index = np.random.randint(len(file_list))
-            if file_list[index].split('\\')[-1][:2] == self.class_to_guess:
-                self.vib_to_guess, fs = librosa.load(file_list[index], sr=44100)
+            index = np.random.randint(len(self.fake_file_list))
+            if self.fake_file_list[index].split('\\')[-1][:4] == self.vib_name:
+                self.vib_to_guess, fs = librosa.load(self.fake_file_list[index], sr=44100)
                 break
         
         layout = QVBoxLayout()
@@ -147,21 +141,27 @@ class Comparsion(QWidget):
         body_layout = QHBoxLayout()
         
         self.vib_comp_list = []
+        self.vib_comp_name = []
         
         for c in self.class_list:
-            while True:
-                # Initial status: Real (Fake) vs Fake (Real)
-                index = np.random.randint(len(file_list))
-                if file_list[index].split('\\')[-1][:2] == c:
-                    vib_c, fs = librosa.load(file_list[index], sr=44100)
-                    self.vib_comp_list.append(vib_c)
-                    break
+            if c == self.vib_name[:2]:
+                vib_c, fs = librosa.load('Reference_Waves/' + self.vib_name + '.wav', sr=44100)
+                self.vib_comp_list.append(vib_c)
+                self.vib_comp_name.append(self.vib_name)
+            else:
+                while True:
+                    index = np.random.randint(len(self.real_file_list))
+                    if self.real_file_list[index].split('/')[-1][:2] == c:
+                        vib_c, fs = librosa.load(self.real_file_list[index], sr=44100)
+                        self.vib_comp_list.append(vib_c)
+                        self.vib_comp_name.append(self.real_file_list[index].split('/')[-1][:4])
+                        break
                 
         vib_layout_1 = QVBoxLayout()
         play_button_1 = QPushButton("Play")
         play_button_1.clicked.connect(partial(self.playVib, 0))
         vib_layout_1.addWidget(play_button_1, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_1 = QRadioButton(self.class_list[0], self)
+        checkButton_1 = QRadioButton('1', self)
         checkButton_1.toggled.connect(self.checkClass)
         vib_layout_1.addWidget(checkButton_1, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_1)
@@ -170,7 +170,7 @@ class Comparsion(QWidget):
         play_button_2 = QPushButton("Play")
         play_button_2.clicked.connect(partial(self.playVib, 1))
         vib_layout_2.addWidget(play_button_2, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_2 = QRadioButton(self.class_list[1], self)
+        checkButton_2 = QRadioButton('2', self)
         checkButton_2.toggled.connect(self.checkClass)
         vib_layout_2.addWidget(checkButton_2, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_2)
@@ -179,7 +179,7 @@ class Comparsion(QWidget):
         play_button_3 = QPushButton("Play")
         play_button_3.clicked.connect(partial(self.playVib, 2))
         vib_layout_3.addWidget(play_button_3, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_3 = QRadioButton(self.class_list[2], self)
+        checkButton_3 = QRadioButton('3', self)
         checkButton_3.toggled.connect(self.checkClass)
         vib_layout_3.addWidget(checkButton_3, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_3)
@@ -188,7 +188,7 @@ class Comparsion(QWidget):
         play_button_4 = QPushButton("Play")
         play_button_4.clicked.connect(partial(self.playVib, 3))
         vib_layout_4.addWidget(play_button_4, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_4 = QRadioButton(self.class_list[3], self)
+        checkButton_4 = QRadioButton('4', self)
         checkButton_4.toggled.connect(self.checkClass)
         vib_layout_4.addWidget(checkButton_4, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_4)
@@ -197,7 +197,7 @@ class Comparsion(QWidget):
         play_button_5 = QPushButton("Play")
         play_button_5.clicked.connect(partial(self.playVib, 4))
         vib_layout_5.addWidget(play_button_5, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_5 = QRadioButton(self.class_list[4], self)
+        checkButton_5 = QRadioButton('5', self)
         checkButton_5.toggled.connect(self.checkClass)
         vib_layout_5.addWidget(checkButton_5, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_5)
@@ -214,7 +214,7 @@ class Comparsion(QWidget):
     def checkClass(self):
         self.checkButton = self.sender()
         # self.lMessage.setText(u'Choose {0}'.format(checkButton.text()))
-        self.checked_class = self.checkButton.text()
+        self.checked_class = self.vib_comp_name[int(self.checkButton.text()) - 1]
         self.submit_button.setEnabled(True)
 
     def submitClass(self):
@@ -222,48 +222,54 @@ class Comparsion(QWidget):
         self.checkButton.setCheckable(True)
         sd.stop()
         self.submit_button.setEnabled(False)
-        self.confusion_matrix[self.class_to_guess + '_True'][self.checked_class + '_User'] += 1
-        print(self.confusion_matrix)
-        self.confusion_matrix.to_csv('Evaluation_Results/confusion_matrix' + self.file_time + '.csv')
+        self.pred.append(self.checked_class)
+        self.true.append(self.vib_name)
+
+        print(self.pred)
+        print(self.true)
+
+        conf_matrix = confusion_matrix(self.true, self.pred)
+
+        pd.DataFrame(conf_matrix).to_csv('Evaluation_Results/confusion_matrix_all_' + self.file_time + '.csv')
         
-        if self.task_n == len(self.class_list) - 1:
+        if self.task_n == len(self.vib_list) - 1:
             self.task_n = 0
-            self.pairing_pattern += 1
-            if self.pairing_pattern > 2:
+            self.repeat_time += 1
+            # 3 repetition experiments
+            if self.repeat_time > 2:
                 sys.exit()
             
-            self.class_order = np.arange(len(self.class_list))
-            np.random.shuffle(self.class_order)
+            self.vib_order = np.arange(len(self.vib_list))
+            np.random.shuffle(self.vib_order)
             
         else:
             self.task_n += 1
         
-        self.class_to_guess = self.class_list[self.class_order[self.task_n]] 
+        self.vib_name = self.vib_list[self.vib_order[self.task_n]] 
             
-        # 0: Real (Fake) vs Fake (Real)
-        # 1: Fake vs Fake
-        # 2: Real vs Real
-        if self.pairing_pattern == 0:
-            file_list = self.real_file_list + self.fake_file_list
-        if self.pairing_pattern == 1:
-            file_list = self.real_file_list
-        if self.pairing_pattern == 2:
-            file_list = self.fake_file_list
-        
-        while True:     
-            index = np.random.randint(len(file_list))
-            if file_list[index].split('\\')[-1][:2] == self.class_to_guess:
-                self.vib_to_guess, fs = librosa.load(file_list[index], sr=44100)
+        # generated vibration to guess (Fake)
+        while True:
+            index = np.random.randint(len(self.fake_file_list))
+            if self.fake_file_list[index].split('\\')[-1][:4] == self.vib_name:
+                self.vib_to_guess, fs = librosa.load(self.fake_file_list[index], sr=44100)
                 break
             
+        # reference vibrations
         self.vib_comp_list = []
+        self.vib_comp_name = []
         for c in self.class_list:
-            while True:
-                index = np.random.randint(len(file_list))
-                if file_list[index].split('\\')[-1][:2] == c:
-                    vib_c, fs = librosa.load(file_list[index], sr=44100)
-                    self.vib_comp_list.append(vib_c)
-                    break
+            if c == self.vib_name[:2]:
+                vib_c, fs = librosa.load('Reference_Waves/' + self.vib_name + '.wav', sr=44100)
+                self.vib_comp_list.append(vib_c)
+                self.vib_comp_name.append(self.vib_name)
+            else:
+                while True:
+                    index = np.random.randint(len(self.real_file_list))
+                    if self.real_file_list[index].split('/')[-1][:2] == c:
+                        vib_c, fs = librosa.load(self.real_file_list[index], sr=44100)
+                        self.vib_comp_list.append(vib_c)
+                        self.vib_comp_name.append(self.real_file_list[index].split('/')[-1][:4])
+                        break
         
     
     def playVib(self, vib_index):
