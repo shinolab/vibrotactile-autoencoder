@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-19 17:04:33
+LastEditTime: 2024-01-23 17:17:49
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -11,8 +11,10 @@ import sounddevice as sd
 import os
 import librosa
 import datetime
+import matplotlib.pyplot as plt
 import pandas as pd
 from functools import partial
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from PyQt5.QtWidgets import (QApplication, QRadioButton, QHBoxLayout, QVBoxLayout, 
                              QWidget, QPushButton, QLabel)
 from PyQt5.QtCore import Qt
@@ -105,12 +107,9 @@ class Comparsion(QWidget):
                 self.fake_file_list.append(os.path.join(root, name))
                 
         self.class_list = ['G2', 'G3', 'G4', 'G6', 'G8']
-        self.confusion_matrix = {'G2_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
-                                 'G3_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
-                                 'G4_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
-                                 'G6_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0},
-                                 'G8_True':{'G2_User': 0, 'G3_User': 0, 'G4_User': 0, 'G6_User': 0, 'G8_User': 0}}
-        self.confusion_matrix = pd.DataFrame(self.confusion_matrix)
+
+        self.pred = []
+        self.true = []
         
         self.task_n = 0
         self.repeat_time = 0
@@ -152,7 +151,7 @@ class Comparsion(QWidget):
         play_button_1 = QPushButton("Play")
         play_button_1.clicked.connect(partial(self.playVib, 0))
         vib_layout_1.addWidget(play_button_1, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_1 = QRadioButton(self.class_list[0], self)
+        checkButton_1 = QRadioButton('1', self)
         checkButton_1.toggled.connect(self.checkClass)
         vib_layout_1.addWidget(checkButton_1, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_1)
@@ -161,7 +160,7 @@ class Comparsion(QWidget):
         play_button_2 = QPushButton("Play")
         play_button_2.clicked.connect(partial(self.playVib, 1))
         vib_layout_2.addWidget(play_button_2, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_2 = QRadioButton(self.class_list[1], self)
+        checkButton_2 = QRadioButton('2', self)
         checkButton_2.toggled.connect(self.checkClass)
         vib_layout_2.addWidget(checkButton_2, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_2)
@@ -170,7 +169,7 @@ class Comparsion(QWidget):
         play_button_3 = QPushButton("Play")
         play_button_3.clicked.connect(partial(self.playVib, 2))
         vib_layout_3.addWidget(play_button_3, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_3 = QRadioButton(self.class_list[2], self)
+        checkButton_3 = QRadioButton('3', self)
         checkButton_3.toggled.connect(self.checkClass)
         vib_layout_3.addWidget(checkButton_3, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_3)
@@ -179,7 +178,7 @@ class Comparsion(QWidget):
         play_button_4 = QPushButton("Play")
         play_button_4.clicked.connect(partial(self.playVib, 3))
         vib_layout_4.addWidget(play_button_4, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_4 = QRadioButton(self.class_list[3], self)
+        checkButton_4 = QRadioButton('4', self)
         checkButton_4.toggled.connect(self.checkClass)
         vib_layout_4.addWidget(checkButton_4, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_4)
@@ -188,7 +187,7 @@ class Comparsion(QWidget):
         play_button_5 = QPushButton("Play")
         play_button_5.clicked.connect(partial(self.playVib, 4))
         vib_layout_5.addWidget(play_button_5, 1, Qt.AlignCenter | Qt.AlignCenter)
-        checkButton_5 = QRadioButton(self.class_list[4], self)
+        checkButton_5 = QRadioButton('5', self)
         checkButton_5.toggled.connect(self.checkClass)
         vib_layout_5.addWidget(checkButton_5, 1, Qt.AlignCenter | Qt.AlignCenter)
         body_layout.addLayout(vib_layout_5)
@@ -205,7 +204,7 @@ class Comparsion(QWidget):
     def checkClass(self):
         self.checkButton = self.sender()
         # self.lMessage.setText(u'Choose {0}'.format(checkButton.text()))
-        self.checked_class = self.checkButton.text()
+        self.checked_class = self.class_list[int(self.checkButton.text()) - 1]
         self.submit_button.setEnabled(True)
 
     def submitClass(self):
@@ -213,9 +212,32 @@ class Comparsion(QWidget):
         self.checkButton.setCheckable(True)
         sd.stop()
         self.submit_button.setEnabled(False)
-        self.confusion_matrix[self.class_to_guess + '_True'][self.checked_class + '_User'] += 1
-        print(self.confusion_matrix)
-        self.confusion_matrix.to_csv('Evaluation_Results/confusion_matrix' + self.file_time + '.csv')
+        self.pred.append(self.checked_class)
+        self.true.append(self.class_to_guess)
+
+        # print(self.pred)
+        # print(self.true)
+
+        conf_matrix = confusion_matrix(self.true, self.pred, labels=sorted(set(self.true + self.pred)))
+
+        cm = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, 
+                                    display_labels=sorted(set(self.true + self.pred)))
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        plt.title('Confusion matrix')
+
+        cm.plot(
+            include_values=True,
+            cmap="Blues",
+            colorbar=False,
+            ax=ax,
+            xticks_rotation="horizontal",
+            values_format="d"
+        ).figure_.savefig('Evaluation_Results/cm_cross.png', dpi=300)
+
+        plt.close()
+
+        pd.DataFrame(conf_matrix).to_csv('Evaluation_Results/cm_cross_' + self.file_time + '.csv')
         
         if self.task_n == len(self.class_list) - 1:
             self.task_n = 0

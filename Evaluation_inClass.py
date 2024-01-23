@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-19 17:04:33
+LastEditTime: 2024-01-23 17:16:42
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -117,8 +117,8 @@ class Comparsion(QWidget):
         self.repeat_time = 0
         # Only Fake (generated to classify) vs Real (class reference)
 
-        self.pred = []
-        self.true = []
+        self.pred = {'G2': [], 'G3': [], 'G4': [], 'G6': [], 'G8': []}
+        self.true = {'G2': [], 'G3': [], 'G4': [], 'G6': [], 'G8': []}
         
         self.vib_order = np.arange(len(self.vib_list))
         np.random.shuffle(self.vib_order)
@@ -197,18 +197,20 @@ class Comparsion(QWidget):
         self.checkButton.setCheckable(True)
         sd.stop()
         self.submit_button.setEnabled(False)
-        self.pred.append(self.checked_class)
-        self.true.append(self.vib_name)
+        
+        self.pred[self.vib_name[:2]].append(self.checked_class)
+        self.true[self.vib_name[:2]].append(self.vib_name)
 
         print(self.pred)
         print(self.true)
 
-        conf_matrix = confusion_matrix(self.true, self.pred, labels=sorted(set(self.true + self.pred)))
+        conf_matrix = confusion_matrix(self.true[self.vib_name[:2]], self.pred[self.vib_name[:2]], 
+                                       labels=sorted(set(self.true[self.vib_name[:2]] + self.pred[self.vib_name[:2]])))
 
         cm = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, 
-                                    display_labels=sorted(set(self.true + self.pred)))
+                                    display_labels=sorted(set(self.true[self.vib_name[:2]] + self.pred[self.vib_name[:2]])))
 
-        fig, ax = plt.subplots(figsize=(9, 9))
+        fig, ax = plt.subplots(figsize=(5, 5))
         plt.title('Confusion matrix')
 
         cm.plot(
@@ -218,11 +220,11 @@ class Comparsion(QWidget):
             ax=ax,
             xticks_rotation="horizontal",
             values_format="d"
-        ).figure_.savefig('confusion_matrix.png', dpi=300)
+        ).figure_.savefig('Evaluation_Results/cm_inclass_' + self.vib_name[:2] + '_' + self.file_time + '.png', dpi=300)
 
         plt.close()
 
-        pd.DataFrame(conf_matrix).to_csv('Evaluation_Results/confusion_matrix_inclass_' + self.file_time + '.csv')
+        pd.DataFrame(conf_matrix).to_csv('Evaluation_Results/cm_inclass_' + self.vib_name[:2] + '_' + self.file_time + '.csv')
         
         if self.task_n == len(self.vib_list) - 1:
             self.task_n = 0
