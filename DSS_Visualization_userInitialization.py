@@ -13,7 +13,7 @@ import sys
 import torchaudio
 import UserInterface
 from PyQt5.QtWidgets import QApplication
-from CAAE_14class import model
+from TactileCAAE import model
 
 
 device = torch.device("cuda")
@@ -35,13 +35,13 @@ if __name__ == "__main__":
     print(testset['filename'][index])
     group = testset['filename'][index][:2]
 
-    with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
+    with open('TactileCAAE/latent_dict.pickle', 'rb') as file:
         latent_dict = pickle.load(file)
     
     index = np.random.randint(len(latent_dict['z']))
     init_z = latent_dict['z'][index]
 
-    model_name = 'CAAE_14class'
+    model_name = 'TactileCAAE'
     decoder = model.Generator(feat_dim=FEAT_DIM)
     decoder.eval() 
     decoder.to(device)

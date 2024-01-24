@@ -7,7 +7,7 @@ Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved.
 '''
 import sys
 import numpy as np
-from CAAE_14class import model
+from TactileCAAE import model
 import torch
 import pickle
 import sys
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     print(testset['filename'][index])
     group = testset['filename'][index][:2]
 
-    model_name = 'CAAE_14class'
+    model_name = 'TactileCAAE'
     decoder = model.Generator(feat_dim=FEAT_DIM)
     decoder.eval() 
     decoder.to(device)
