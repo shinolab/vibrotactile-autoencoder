@@ -111,7 +111,7 @@ class InitWindow(QWidget):
         self.submit_button.setEnabled(True)
 
     def SelectVec(self, z, rank):
-        # with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
+        # with open('TactileCAAE/latent_dict.pickle', 'rb') as file:
         #     latent_dict = pickle.load(file)
         
         # avg_dis = 0
@@ -129,7 +129,7 @@ class InitWindow(QWidget):
         step = avg_dis / 8
         tabu_range = step
 
-        with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
+        with open('TactileCAAE/latent_dict.pickle', 'rb') as file:
             latent_dict = pickle.load(file)
 
         new_z = []
@@ -389,7 +389,7 @@ class DSS_Experiment(QMainWindow):
 
     def saveWavFile(self):
         file_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        subject_name = 'zhang'
+        subject_name = 'wang'
         # real_file_name = "Generation_Results/Real/" + subject_name + "/" + self.target_group + "_" + file_time + ".wav"
         fake_file_name = "Generated_Waves/" + subject_name + "/" + self.target_file_name + "_" + file_time + ".wav"
         # scipy.io.wavfile.write(real_file_name, 44100, self.target_wav)

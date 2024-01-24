@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2023-07-04 01:27:58
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-16 19:18:42
+LastEditTime: 2024-01-24 13:56:18
 Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -15,7 +15,7 @@ import torchaudio
 import librosa
 import UserInterface
 from PyQt5.QtWidgets import QApplication
-from CAAE_14class import model
+from TactileCAAE import model
 
 
 device = torch.device("cuda")
@@ -55,13 +55,13 @@ if __name__ == "__main__":
             print(target_file_name)
             break
 
-    with open('CAAE_14class/latent_dict.pickle', 'rb') as file:
+    with open('TactileCAAE/latent_dict.pickle', 'rb') as file:
         latent_dict = pickle.load(file)
     
     index = np.random.randint(len(latent_dict['z']))
     init_z = latent_dict['z'][index]
 
-    model_name = 'CAAE_14class'
+    model_name = 'TactileCAAE'
     decoder = model.Generator(feat_dim=FEAT_DIM)
     decoder.eval() 
     decoder.to(device)
