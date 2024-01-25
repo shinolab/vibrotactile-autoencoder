@@ -308,6 +308,8 @@ class DSS_Experiment(QMainWindow):
         title_font = QtGui.QFont()
         title_font.setPointSize(16)
         title_font.setBold(True)
+        qlabel = QLabel()
+        qlabel.setFont(QtGui.QFont("Ubuntu", 16, QtGui.QFont.Bold))
 
         target_title = QLabel('Target Vibration Recording')
         target_title.setFont(title_font)
