@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-23 17:17:49
+LastEditTime: 2024-04-05 01:31:44
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -11,6 +11,7 @@ import sounddevice as sd
 import os
 import librosa
 import datetime
+import random
 import matplotlib.pyplot as plt
 import pandas as pd
 from functools import partial
@@ -112,20 +113,11 @@ class Comparsion(QWidget):
         self.true = []
         
         self.task_n = 0
-        self.repeat_time = 0
         # Only Fake (generated to classify) vs Real (class reference)
-        
-        self.class_order = np.arange(len(self.class_list))
-        np.random.shuffle(self.class_order)
-        
-        self.class_to_guess = self.class_list[self.class_order[self.task_n]]
-        
-        # Initial status: class 0
-        while True:
-            index = np.random.randint(len(self.fake_file_list))
-            if self.fake_file_list[index].split('\\')[-1][:2] == self.class_to_guess:
-                self.vib_to_guess, fs = librosa.load(self.fake_file_list[index], sr=44100)
-                break
+        random.shuffle(self.fake_file_list)
+
+        self.class_to_guess = self.fake_file_list[self.task_n].split('\\')[-1][:2]
+        self.vib_to_guess, fs = librosa.load(self.fake_file_list[self.task_n], sr=44100)
         
         layout = QVBoxLayout()
         
@@ -239,27 +231,15 @@ class Comparsion(QWidget):
 
         pd.DataFrame(conf_matrix).to_csv('Evaluation_Results/cm_cross_' + self.file_time + '.csv')
         
-        if self.task_n == len(self.class_list) - 1:
-            self.task_n = 0
-            self.repeat_time += 1
-            # 3 repetition experiments
-            if self.repeat_time > 2:
-                sys.exit()
-            
-            self.class_order = np.arange(len(self.class_list))
-            np.random.shuffle(self.class_order)
+        if self.task_n == len(self.fake_file_list) - 1:
+            sys.exit()
             
         else:
             self.task_n += 1
         
-        self.class_to_guess = self.class_list[self.class_order[self.task_n]] 
-            
         # generated vibration to guess (Fake)
-        while True:     
-            index = np.random.randint(len(self.fake_file_list))
-            if self.fake_file_list[index].split('\\')[-1][:2] == self.class_to_guess:
-                self.vib_to_guess, fs = librosa.load(self.fake_file_list[index], sr=44100)
-                break
+        self.class_to_guess = self.fake_file_list[self.task_n].split('\\')[-1][:2]
+        self.vib_to_guess, fs = librosa.load(self.fake_file_list[self.task_n], sr=44100)
             
         # reference vibrations
         self.vib_comp_list = []
