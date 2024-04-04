@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-23 17:18:09
+LastEditTime: 2024-04-05 01:35:32
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -237,8 +237,8 @@ class Comparsion(QWidget):
         if self.task_n == len(self.class_list) - 1:
             self.task_n = 0
             self.repeat_time += 1
-            # 3 repetition experiments
-            if self.repeat_time > 2:
+            # 9 repetition experiments
+            if self.repeat_time > 8:
                 sys.exit()
             
             self.class_order = np.arange(len(self.class_list))
