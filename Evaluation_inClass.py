@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-01-23 17:16:42
+LastEditTime: 2024-04-10 12:09:19
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -238,6 +238,7 @@ class Comparsion(QWidget):
             
         else:
             self.task_n += 1
+        print(self.task_n)
         
         self.vib_name = self.vib_list[self.vib_order[self.task_n]] 
             

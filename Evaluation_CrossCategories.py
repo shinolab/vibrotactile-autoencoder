@@ -2,7 +2,7 @@
 Author: Mingxin Zhang m.zhang@hapis.k.u-tokyo.ac.jp
 Date: 2024-01-11 15:24:25
 LastEditors: Mingxin Zhang
-LastEditTime: 2024-04-05 01:31:44
+LastEditTime: 2024-04-10 11:42:50
 Copyright (c) 2024 by Mingxin Zhang, All Rights Reserved. 
 '''
 import sys
@@ -236,6 +236,8 @@ class Comparsion(QWidget):
             
         else:
             self.task_n += 1
+        
+        print(self.task_n)
         
         # generated vibration to guess (Fake)
         self.class_to_guess = self.fake_file_list[self.task_n].split('\\')[-1][:2]
