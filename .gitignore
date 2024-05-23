@@ -1,7 +1,4 @@
-.git
-.gitignore
-.ipynb_checkpoints
-.DS_Store
+.*
 *.pt
 *.pickle
 *.png
