@@ -2,6 +2,8 @@
 *.pt
 *.pickle
 *.png
+*.csv
+*.wav
 *Dataset
 __pycache__/
 7-group
@@ -13,8 +15,6 @@ feat_dict
 figure
 CAAE_7group
 CAAE_LMT108
-Evaluation_Results
-Generated_Waves
 desktop.ini
 vib_AAE.ipynb
 vib_VAE.ipynb
