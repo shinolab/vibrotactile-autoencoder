@@ -2,13 +2,15 @@
  * @Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
  * @Date: 2023-03-06 03:05:31
  * @LastEditors: Mingxin Zhang
- * @LastEditTime: 2024-08-22 17:31:45
+ * @LastEditTime: 2024-08-22 17:34:53
  * Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 -->
 # Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network
 
 Paper: [TEXasGAN: Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network](https://arxiv.org/abs/2407.11467)
 
+![System structure](https://github.com/shinolab/vibrotactile-autoencoder/blob/main/images/system.jpg?raw=true)
+![Network model](https://github.com/shinolab/vibrotactile-autoencoder/blob/main/images/network.jpg?raw=true)
 
 ~~To obtain the preprocessed dataset, run the notebook `preprocess.ipynb`, then the `trainset.pickle` will be generated.~~
 
