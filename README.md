@@ -2,10 +2,13 @@
  * @Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
  * @Date: 2023-03-06 03:05:31
  * @LastEditors: Mingxin Zhang
- * @LastEditTime: 2023-11-14 18:15:29
+ * @LastEditTime: 2024-08-22 17:31:45
  * Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 -->
-# vibtactile-autoencoder (To Update)
+# Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network
+
+Paper: [TEXasGAN: Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network](https://arxiv.org/abs/2407.11467)
+
 
 ~~To obtain the preprocessed dataset, run the notebook `preprocess.ipynb`, then the `trainset.pickle` will be generated.~~
 
