@@ -2,7 +2,7 @@
  * @Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
  * @Date: 2023-03-06 03:05:31
  * @LastEditors: Mingxin Zhang
- * @LastEditTime: 2024-08-22 17:58:43
+ * @LastEditTime: 2024-08-22 18:22:15
  * Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 -->
 # Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network
@@ -16,6 +16,6 @@ The opendataset used this paper: [LMT Haptic Texture Database](https://zeus.lmt.
 
 To obtain the preprocessed dataset, run the notebook `preprocess.ipynb`. In this study, we selected 14 classes to build a training dataset.
 
-Run the `TactileCAAE/train.py` to train the model. The dictionary of the trained model parameters are saved as `encoder.pt`, `decoder.pt` and `classifier.pt`. After loading the trained parameters, the model can be used directly without training.
+Run the `TactileCAAE/train.py` to train the model. The dictionary of the trained model parameters are saved in `TactileCAAE`. After loading the trained parameters, the model can be used directly for the user optimization.
 
-~~After the running of the `vib_autoencoder.ipynb`, the extracted features are also saved as a dictionary `feat_dict.pickle`.~~
+Run the `DSS_Experiment_UserInitialization.py` to start the optimization with the user initialization. Run the `DSS_Experiment.py` to start the optimization directly.
