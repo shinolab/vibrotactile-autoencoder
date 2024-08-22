@@ -2,7 +2,7 @@
  * @Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
  * @Date: 2023-03-06 03:05:31
  * @LastEditors: Mingxin Zhang
- * @LastEditTime: 2024-08-22 18:22:15
+ * @LastEditTime: 2024-08-22 18:37:50
  * Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 -->
 # Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network
@@ -19,3 +19,20 @@ To obtain the preprocessed dataset, run the notebook `preprocess.ipynb`. In this
 Run the `TactileCAAE/train.py` to train the model. The dictionary of the trained model parameters are saved in `TactileCAAE`. After loading the trained parameters, the model can be used directly for the user optimization.
 
 Run the `DSS_Experiment_UserInitialization.py` to start the optimization with the user initialization. Run the `DSS_Experiment.py` to start the optimization directly.
+
+## Citation
+
+If you find this repo is helpful, please cite:
+
+```bibtex
+@article{zhang2024texasgan,
+  title={TEXasGAN: Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network},
+  author={Zhang, Mingxin and Terui, Shun and Makino, Yasutoshi and Shinoda, Hiroyuki},
+  journal={arXiv preprint arXiv:2407.11467},
+  year={2024}
+}
+```
+
+## Acknowledgments
+
+This code is based on the implementations of [Difference-Subspace-Search](https://github.com/tbcey74123/Difference-Subspace-Search).
