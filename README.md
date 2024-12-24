@@ -2,10 +2,10 @@
  * @Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
  * @Date: 2023-03-06 03:05:31
  * @LastEditors: Mingxin Zhang
- * @LastEditTime: 2024-12-24 19:52:19
+ * @LastEditTime: 2024-12-24 19:54:44
  * Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 -->
-# Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network
+# TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network
 
 This repository contains the code for the paper: [TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network](https://arxiv.org/abs/2407.11467)
 
