@@ -2,12 +2,12 @@
  * @Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
  * @Date: 2023-03-06 03:05:31
  * @LastEditors: Mingxin Zhang
- * @LastEditTime: 2024-08-22 18:37:50
+ * @LastEditTime: 2024-12-24 19:52:19
  * Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 -->
 # Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network
 
-This repository contains the code for the paper: [TEXasGAN: Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network](https://arxiv.org/abs/2407.11467)
+This repository contains the code for the paper: [TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network](https://arxiv.org/abs/2407.11467)
 
 ![System structure](https://github.com/shinolab/vibrotactile-autoencoder/blob/main/images/system.jpg?raw=true)
 ![Network model](https://github.com/shinolab/vibrotactile-autoencoder/blob/main/images/network.jpg?raw=true)
@@ -25,8 +25,8 @@ Run the `DSS_Experiment_UserInitialization.py` to start the optimization with th
 If you find this repo is helpful, please cite:
 
 ```bibtex
-@article{zhang2024texasgan,
-  title={TEXasGAN: Tactile Texture Exploration and Synthesis System Using Generative Adversarial Network},
+@article{zhang2024texsensegan,
+  title={TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network},
   author={Zhang, Mingxin and Terui, Shun and Makino, Yasutoshi and Shinoda, Hiroyuki},
   journal={arXiv preprint arXiv:2407.11467},
   year={2024}
