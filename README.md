@@ -2,12 +2,12 @@
  * @Author: Mingxin Zhang m.zhang@hapis.u-tokyo.ac.jp
  * @Date: 2023-03-06 03:05:31
  * @LastEditors: Mingxin Zhang
- * @LastEditTime: 2024-12-24 19:54:44
+ * @LastEditTime: 2025-03-10 16:01:20
  * Copyright (c) 2023 by Mingxin Zhang, All Rights Reserved. 
 -->
 # TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network
 
-This repository contains the code for the paper: [TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network](https://arxiv.org/abs/2407.11467)
+This repository contains the code for the paper: [TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network](https://ieeexplore.ieee.org/abstract/document/10891204)
 
 ![System structure](https://github.com/shinolab/vibrotactile-autoencoder/blob/main/images/system.jpg?raw=true)
 ![Network model](https://github.com/shinolab/vibrotactile-autoencoder/blob/main/images/network.jpg?raw=true)
@@ -25,12 +25,16 @@ Run the `DSS_Experiment_UserInitialization.py` to start the optimization with th
 If you find this repo is helpful, please cite:
 
 ```bibtex
-@article{zhang2024texsensegan,
-  title={TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network},
+@ARTICLE{10891204,
   author={Zhang, Mingxin and Terui, Shun and Makino, Yasutoshi and Shinoda, Hiroyuki},
-  journal={arXiv preprint arXiv:2407.11467},
-  year={2024}
-}
+  journal={IEEE Transactions on Haptics}, 
+  title={TexSenseGAN: A User-Guided System for Optimizing Texture-Related Vibrotactile Feedback Using Generative Adversarial Network}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={1-15},
+  keywords={Vibrations;Optimization;Generative adversarial networks;Vectors;Generators;Deep learning;Training;Human in the loop;Haptic interfaces;Aerospace electronics;Haptic display;Human-computer interaction;Optimization;Deep learning;Autoencoder;Generative adversarial networks},
+  doi={10.1109/TOH.2025.3542424}}
 ```
 
 ## Acknowledgments
